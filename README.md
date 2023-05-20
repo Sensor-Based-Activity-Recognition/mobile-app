@@ -11,6 +11,6 @@ Run instructions for iOS:
 Run instructions for macOS:
 - See [https://aka.ms/ReactNativeGuideMacOS](https://aka.ms/ReactNativeGuideMacOS) for the latest up-to-date instructions.
 
-## XCode
+## XCode
 
 List available devices: `xcrun simctl list devices`
