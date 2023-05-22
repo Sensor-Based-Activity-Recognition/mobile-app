@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator } from 'react-native';
-import { accelerometer, gyroscope, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
+import { accelerometer, gyroscope, magnetometer, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-
-type SensorData = {x: number, y: number, z: number, timestamp: number}[];
+import { SensorData, Payload, Reading } from './lib/types';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -21,14 +20,18 @@ function App(): JSX.Element {
   const [gyroscopeData, setGyroscopeData] = useState<SensorData>([]);
   const [displayAccelerometerData, setDisplayAccelerometerData] = useState<SensorData>([]);
   const [displayGyroscopeData, setDisplayGyroscopeData] = useState<SensorData>([]);
+  const [magnetometerData, setMagnetometerData] = useState<SensorData>([]);
+  const [displayMagnetometerData, setDisplayMagnetometerData] = useState<SensorData>([]);
 
   const accelerometerDataRef = useRef<SensorData>([]);
   const gyroscopeDataRef = useRef<SensorData>([]);
+  const magnetometerDataRef = useRef<SensorData>([]);
 
   useEffect(() => {
     if(isLoading) {
-      setUpdateIntervalForType(SensorTypes.accelerometer, 20); // 50 Hz (20 ms)
-      setUpdateIntervalForType(SensorTypes.gyroscope, 20); // 50 Hz (20 ms)
+      setUpdateIntervalForType(SensorTypes.accelerometer, 10); // 100 Hz (20 ms)
+      setUpdateIntervalForType(SensorTypes.gyroscope, 10); // 100 Hz (20 ms)
+      setUpdateIntervalForType(SensorTypes.magnetometer, 10); // 100 Hz (20 ms)
 
       const subscriptionAccelerometer = accelerometer.subscribe(({ x, y, z, timestamp }) => {
         accelerometerDataRef.current = [...accelerometerDataRef.current, {x, y, z, timestamp}];
@@ -40,10 +43,16 @@ function App(): JSX.Element {
         setGyroscopeData(gyroscopeDataRef.current);
       });
 
+      const subscriptionMagnetometer = magnetometer.subscribe(({ x, y, z, timestamp }) => {
+        magnetometerDataRef.current = [...magnetometerDataRef.current, {x, y, z, timestamp}];
+        setMagnetometerData(magnetometerDataRef.current);
+      });
+
       // Cleanup function to unsubscribe when component is unmounted
       return () => {
         subscriptionAccelerometer.unsubscribe();
         subscriptionGyroscope.unsubscribe();
+        subscriptionMagnetometer.unsubscribe();
       };
     }
   }, [isLoading]);
@@ -52,19 +61,19 @@ function App(): JSX.Element {
     const interval = setInterval(() => {
       setDisplayAccelerometerData(accelerometerDataRef.current);
       setDisplayGyroscopeData(gyroscopeDataRef.current);
+      setDisplayMagnetometerData(magnetometerDataRef.current);
     }, 500);
     return () => clearInterval(interval);
   }, []);
 
-  const sendDataToServer = async () => {
+  const sendDataToServer = async (data: string) => {
     try {
-      setActivity("Fetching result...");
-
-      // TODO: implement API call to send data to server
-      // const response = await axios.post('https://your-api-url.com/endpoint', {
-      //   accelerometer: accelerometerData,
-      //   gyroscope: gyroscopeData
+      // Call API
+      // const response = await axios.post('https://sbar.fuet.ch/CNN', data, {
+      //   headers: { 'Content-Type': 'application/octet-stream' }
       // });
+  
+      // return response.data;
 
       // For Now: Simulate API call
       // Simulate network delay
@@ -76,7 +85,6 @@ function App(): JSX.Element {
       const activityResult = activities[randomIndex];
 
       return activityResult;
-      // return response.data;
     } catch (error) {
       console.error(error);
       return "Error";
@@ -85,21 +93,34 @@ function App(): JSX.Element {
 
   const recordAndSendData = async () => {
     // Clear sensor data
+    accelerometerDataRef.current = [];
+    gyroscopeDataRef.current = [];
+    magnetometerDataRef.current = [];
     setAccelerometerData([]);
     setGyroscopeData([]);
-
+    setMagnetometerData([]);
+  
     // Collect sensor data for 10 seconds
     setIsLoading(true);
     setActivity("Recording data...");
     setTimeout(async () => {
-      const activity = await sendDataToServer();
+      const sensorData: Payload = {
+        accelerometer: accelerometerDataRef.current,
+        gyroscope: gyroscopeDataRef.current,
+        magnetometer: magnetometerDataRef.current,
+      };
+  
+      // TODO: Implement
+      // const compressedData = await transformData(sensorData);
+
+      const activity = await sendDataToServer('');
       setActivity(activity);
       setIsLoading(false);
     }, 10000);
   };
 
   const shareSensorData = async () => {
-    const data = JSON.stringify({ accelerometerData, gyroscopeData }, null, 2);
+    const data = JSON.stringify({ accelerometerData, gyroscopeData, magnetometerData }, null, 2);
   
     try {
       // Create a temporary directory for the file
@@ -119,12 +140,9 @@ function App(): JSX.Element {
     }
   };
 
-  const formatCoordinate = (coordinate: number): string => {
-    return coordinate.toFixed(4);
-  };
-
   const latestDisplayAccelerometerData = displayAccelerometerData[displayAccelerometerData.length - 1];
   const latestDisplayGyroscopeData = displayGyroscopeData[displayGyroscopeData.length - 1];
+  const latestDisplayMagnetometerData = displayMagnetometerData[displayMagnetometerData.length - 1];
 
   return (
     <SafeAreaView style={[backgroundStyle, styles.container]}>
@@ -136,35 +154,44 @@ function App(): JSX.Element {
           <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
         )}
         <Text style={[styles.activityText, { color: isDarkMode ? Colors.light : Colors.dark }]}>{activity}</Text>
-        <Text style={[styles.sensorText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
-          Accelerometer
-        </Text>
-        {latestDisplayAccelerometerData ? (
-          <Text style={[styles.coordinateText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
-            X: {formatCoordinate(latestDisplayAccelerometerData.x)}, Y: {formatCoordinate(latestDisplayAccelerometerData.y)}, Z: {formatCoordinate(latestDisplayAccelerometerData.z)}
-          </Text>
-        ) : (
-          <Text style={[styles.coordinateText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
-            No accelerometer data
-          </Text>
-        )}
-        <Text style={[styles.sensorText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
-          Gyroscope
-        </Text>
-        {latestDisplayGyroscopeData ? (
-          <Text style={[styles.coordinateText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
-            X: {formatCoordinate(latestDisplayGyroscopeData.x)}, Y: {formatCoordinate(latestDisplayGyroscopeData.y)}, Z: {formatCoordinate(latestDisplayGyroscopeData.z)}
-          </Text>
-        ) : (
-          <Text style={[styles.coordinateText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
-            No gyroscope data
-          </Text>
-        )}
+        <SensorDataDisplay sensorName="Accelerometer" sensorReading={latestDisplayAccelerometerData} />
+        <SensorDataDisplay sensorName="Gyroscope" sensorReading={latestDisplayGyroscopeData} />
+        <SensorDataDisplay sensorName="Magnetometer" sensorReading={latestDisplayMagnetometerData} />
         <Button title="Share Sensor Data" onPress={shareSensorData}  disabled={isLoading} />
       </View>
     </SafeAreaView>
   );
 }
+
+interface SensorDataDisplayProps {
+  sensorName: string;
+  sensorReading: Reading;
+}
+
+const SensorDataDisplay: React.FC<SensorDataDisplayProps> = ({ sensorName, sensorReading }) => {
+  const isDarkMode = useColorScheme() === 'dark';
+
+  const formatCoordinate = (coordinate: number): string => {
+    return coordinate.toFixed(4);
+  };
+
+  return (
+    <>
+      <Text style={[styles.sensorText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
+        {sensorName}
+      </Text>
+      {sensorReading ? (
+        <Text style={[styles.coordinateText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
+          X: {formatCoordinate(sensorReading.x)}, Y: {formatCoordinate(sensorReading.y)}, Z: {formatCoordinate(sensorReading.z)}
+        </Text>
+      ) : (
+        <Text style={[styles.coordinateText, { color: isDarkMode ? Colors.light : Colors.dark }]}>
+          No {sensorName.toLowerCase()} data
+        </Text>
+      )}
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
