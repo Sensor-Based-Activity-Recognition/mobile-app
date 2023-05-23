@@ -7,35 +7,43 @@ export function convertToCSV(payload: Payload): string {
   // Define headers
   let csvString = 'timestamp,Accelerometer_x,Accelerometer_y,Accelerometer_z,Gyroscope_x,Gyroscope_y,Gyroscope_z,Magnetometer_x,Magnetometer_y,Magnetometer_z\n';
 
-  // len of each array should be the same
-  console.log('payload recordings length', payload.accelerometer.length, payload.gyroscope.length, payload.magnetometer.length)
+  // Create an array of unique timestamps
+  let timestamps: number[] = [];
+  timestamps = timestamps.concat(payload.accelerometer.map(({ timestamp }) => timestamp));
+  timestamps = timestamps.concat(payload.gyroscope.map(({ timestamp }) => timestamp));
+  timestamps = timestamps.concat(payload.magnetometer.map(({ timestamp }) => timestamp));
+  timestamps = [...new Set(timestamps)].sort();
 
-  // get the smallest length
-  const min_len = Math.min(payload.accelerometer.length, payload.gyroscope.length, payload.magnetometer.length)
+  // Map sensor data to their timestamps
+  const sensorDataMap: { [timestamp: number]: { [sensor in keyof Payload]?: Reading } } = {};
 
-  // TODO: We assume that all sensor arrays have the same length and the same corresponding timestamps
-  for (let i = 0; i < min_len; i++) {
-    const accelerometerReading: Reading = payload.accelerometer[i];
-    const gyroscopeReading: Reading = payload.gyroscope[i];
-    const magnetometerReading: Reading = payload.magnetometer[i];
+  (['accelerometer', 'gyroscope', 'magnetometer'] as const).forEach(sensor => {
+    payload[sensor].forEach(reading => {
+      if (!sensorDataMap[reading.timestamp]) {
+        sensorDataMap[reading.timestamp] = {};
+      }
+      sensorDataMap[reading.timestamp][sensor] = reading;
+    });
+  });
 
-    // Create CSV entries
+  // Create CSV rows
+  timestamps.forEach(timestamp => {
+    const dataAtTimestamp = sensorDataMap[timestamp];
     let lineData = [
-      accelerometerReading.timestamp,
-      accelerometerReading.x.toFixed(3),
-      accelerometerReading.y.toFixed(3),
-      accelerometerReading.z.toFixed(3),
-      gyroscopeReading.x.toFixed(3),
-      gyroscopeReading.y.toFixed(3),
-      gyroscopeReading.z.toFixed(3),
-      magnetometerReading.x.toFixed(3),
-      magnetometerReading.y.toFixed(3),
-      magnetometerReading.z.toFixed(3),
+      timestamp,
+      dataAtTimestamp.accelerometer ? dataAtTimestamp.accelerometer.x.toFixed(3) : 'null',
+      dataAtTimestamp.accelerometer ? dataAtTimestamp.accelerometer.y.toFixed(3) : 'null',
+      dataAtTimestamp.accelerometer ? dataAtTimestamp.accelerometer.z.toFixed(3) : 'null',
+      dataAtTimestamp.gyroscope ? dataAtTimestamp.gyroscope.x.toFixed(3) : 'null',
+      dataAtTimestamp.gyroscope ? dataAtTimestamp.gyroscope.y.toFixed(3) : 'null',
+      dataAtTimestamp.gyroscope ? dataAtTimestamp.gyroscope.z.toFixed(3) : 'null',
+      dataAtTimestamp.magnetometer ? dataAtTimestamp.magnetometer.x.toFixed(3) : 'null',
+      dataAtTimestamp.magnetometer ? dataAtTimestamp.magnetometer.y.toFixed(3) : 'null',
+      dataAtTimestamp.magnetometer ? dataAtTimestamp.magnetometer.z.toFixed(3) : 'null',
     ];
-
     // Join data into CSV line and append to CSV string
     csvString += lineData.join(',') + '\n';
-  }
+  });
 
   return csvString;
 }

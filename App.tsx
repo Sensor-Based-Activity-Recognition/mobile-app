@@ -36,6 +36,10 @@ function App(): JSX.Element {
 
       const subscriptionAccelerometer = accelerometer.subscribe(({ x, y, z, timestamp }) => {
         timestamp = timestamp * 1000000
+        // multiply each value by 9.81 to get m/s^2
+        x = x * 9.81;
+        y = y * 9.81;
+        z = z * 9.81;
         accelerometerDataRef.current = [...accelerometerDataRef.current, {x, y, z, timestamp}];
         setAccelerometerData(accelerometerDataRef.current);
       });
