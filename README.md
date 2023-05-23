@@ -58,4 +58,11 @@ or
 
 ## XCode
 
-List available devices: `xcrun simctl list devices`
+List available devices
+
+iOS:
+- `xcrun simctl list devices`
+
+Android:
+- `adb devices`
+- `npx react-native run-android --deviceId adb-R5CR202SXQE-fMiGjJ._adb-tls-connect._tcp.`
