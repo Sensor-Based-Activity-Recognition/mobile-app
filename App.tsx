@@ -6,6 +6,7 @@ import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
 import { SensorData, Payload, Reading } from './lib/types';
+import { convertToCSV, transformData } from './lib/util';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -29,21 +30,24 @@ function App(): JSX.Element {
 
   useEffect(() => {
     if(isLoading) {
-      setUpdateIntervalForType(SensorTypes.accelerometer, 10); // 100 Hz (20 ms)
-      setUpdateIntervalForType(SensorTypes.gyroscope, 10); // 100 Hz (20 ms)
-      setUpdateIntervalForType(SensorTypes.magnetometer, 10); // 100 Hz (20 ms)
+      setUpdateIntervalForType(SensorTypes.accelerometer, 20); // 100 Hz (20 ms)
+      setUpdateIntervalForType(SensorTypes.gyroscope, 20); // 100 Hz (20 ms)
+      setUpdateIntervalForType(SensorTypes.magnetometer, 20); // 100 Hz (20 ms)
 
       const subscriptionAccelerometer = accelerometer.subscribe(({ x, y, z, timestamp }) => {
+        timestamp = timestamp * 1000000
         accelerometerDataRef.current = [...accelerometerDataRef.current, {x, y, z, timestamp}];
         setAccelerometerData(accelerometerDataRef.current);
       });
 
       const subscriptionGyroscope = gyroscope.subscribe(({ x, y, z, timestamp }) => {
+        timestamp = timestamp * 1000000
         gyroscopeDataRef.current = [...gyroscopeDataRef.current, {x, y, z, timestamp}];
         setGyroscopeData(gyroscopeDataRef.current);
       });
 
       const subscriptionMagnetometer = magnetometer.subscribe(({ x, y, z, timestamp }) => {
+        timestamp = timestamp * 1000000
         magnetometerDataRef.current = [...magnetometerDataRef.current, {x, y, z, timestamp}];
         setMagnetometerData(magnetometerDataRef.current);
       });
@@ -66,31 +70,6 @@ function App(): JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
-  const sendDataToServer = async (data: string) => {
-    try {
-      // Call API
-      // const response = await axios.post('https://sbar.fuet.ch/CNN', data, {
-      //   headers: { 'Content-Type': 'application/octet-stream' }
-      // });
-  
-      // return response.data;
-
-      // For Now: Simulate API call
-      // Simulate network delay
-      await new Promise<void>(resolve => setTimeout(resolve, 2000));
-  
-      // Generate random activity result
-      const activities = ['Running', 'Walking', 'Standing'];
-      const randomIndex = Math.floor(Math.random() * activities.length);
-      const activityResult = activities[randomIndex];
-
-      return activityResult;
-    } catch (error) {
-      console.error(error);
-      return "Error";
-    }
-  };
-
   const recordAndSendData = async () => {
     // Clear sensor data
     accelerometerDataRef.current = [];
@@ -110,17 +89,41 @@ function App(): JSX.Element {
         magnetometer: magnetometerDataRef.current,
       };
   
-      // TODO: Implement
-      // const compressedData = await transformData(sensorData);
+      const compressedData = await transformData(sensorData);
 
-      const activity = await sendDataToServer('');
+      setActivity("Fetching data...");
+      const activity = await sendDataToServer(compressedData);
+
       setActivity(activity);
       setIsLoading(false);
-    }, 10000);
+    }, 16000);
+  };
+
+  const sendDataToServer = async (data: Uint8Array) => {
+    try {
+      // Call API
+      console.log("Sending data to server... (first 100 chars", data.slice(0, 100));
+      const response = await axios.post('https://sbar.fuet.ch/CNN', data, {
+        headers: { 'Content-Type': 'application/octet-stream' }
+      });
+      // print info on response
+      console.log("Response from server:", response.status, response.statusText);
+      console.log(response.data)
+      return JSON.stringify(response.data);
+    } catch (error) {
+      console.error(error);
+      return "Error";
+    }
   };
 
   const shareSensorData = async () => {
-    const data = JSON.stringify({ accelerometerData, gyroscopeData, magnetometerData }, null, 2);
+    const sensorData: Payload = {
+      accelerometer: accelerometerDataRef.current,
+      gyroscope: gyroscopeDataRef.current,
+      magnetometer: magnetometerDataRef.current,
+    };
+
+    const csvData = await convertToCSV(sensorData);
   
     try {
       // Create a temporary directory for the file
@@ -128,10 +131,10 @@ function App(): JSX.Element {
       await RNFS.mkdir(tempDirPath);
   
       // Create a temporary file path
-      const tempFilePath = `${tempDirPath}/sensor-data.json`;
+      const tempFilePath = `${tempDirPath}/sensor-data.csv`;
   
       // Write the sensor data to the file
-      await RNFS.writeFile(tempFilePath, data, 'utf8');
+      await RNFS.writeFile(tempFilePath, csvData, 'utf8');
   
       // Share the file using the react-native-share library
       await Share.open({ url: `file://${tempFilePath}` }).catch(error => console.log(error));

@@ -35,6 +35,7 @@ Create ENV Variables in .bashrc or .zshrc (update paths to your own):
 **Run instructions for iOS:**
 
 - `npx react-native run-ios`
+- `npx react-native run-ios --device "itsfrdm"` (run on specific physical device)
 
 or
 
