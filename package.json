@@ -17,6 +17,7 @@
     "react": "18.2.0",
     "react-native": "^0.71.8",
     "react-native-fs": "^2.20.0",
+    "react-native-orientation-locker": "^1.5.0",
     "react-native-picker": "^4.3.7",
     "react-native-sensors": "^7.3.6",
     "react-native-share": "^8.2.2"

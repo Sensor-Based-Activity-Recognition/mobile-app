@@ -5,6 +5,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
+import Orientation from 'react-native-orientation-locker';
 import { SensorData, Payload, Reading } from './lib/types';
 import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
@@ -30,6 +31,11 @@ function App(): JSX.Element {
   const accelerometerDataRef = useRef<SensorData>([]);
   const gyroscopeDataRef = useRef<SensorData>([]);
   const magnetometerDataRef = useRef<SensorData>([]);
+
+  useEffect(() => {
+    console.log('Locking to portrait')
+    Orientation.lockToPortrait();
+  }, []);
 
   useEffect(() => {
     if(isLoading) {
@@ -217,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionContainer: {
-    marginTop: 32,
+    marginTop: 0,
     paddingHorizontal: 24,
     alignItems: 'center',
   },
