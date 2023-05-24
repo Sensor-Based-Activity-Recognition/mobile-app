@@ -111,7 +111,7 @@ function App(): JSX.Element {
   const sendDataToServer = async (data: Uint8Array) => {
     try {
       // Call API
-      console.log("Sending data to server... (first 100 chars", data.slice(0, 100));
+      console.log('Calling API using model:', model)
       const response = await axios.post(`https://sbar.fuet.ch/${model}`, data, {
         headers: { 'Content-Type': 'application/octet-stream' }
       });
@@ -159,15 +159,15 @@ function App(): JSX.Element {
   return (
     <SafeAreaView style={[backgroundStyle, styles.container]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={backgroundStyle.backgroundColor} />
+      <Picker
+        selectedValue={model}
+        onValueChange={(value: string) => setModel(value)}
+      >
+        <Picker.Item label="CNN" value="CNN" />
+        <Picker.Item label="HistGradientBoost" value="HGBC" />
+      </Picker>
       <View style={styles.sectionContainer}>
         <Text style={[isDarkMode ? styles.lightTitle : styles.darkTitle]}>Activity Recognition</Text>
-        <Picker
-          selectedValue={model}
-          onValueChange={(value: string) => setModel(value)}
-        >
-          <Picker.Item label="CNN" value="CNN" />
-          <Picker.Item label="HistGradientBoost" value="HGBC" />
-        </Picker>
         <Button title="Start Recording" onPress={recordAndSendData} disabled={isLoading} />
         {isLoading && (
           <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
@@ -214,7 +214,7 @@ const SensorDataDisplay: React.FC<SensorDataDisplayProps> = ({ sensorName, senso
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
   },
   sectionContainer: {
     marginTop: 32,
