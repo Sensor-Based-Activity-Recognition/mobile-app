@@ -22,9 +22,9 @@ function App(): JSX.Element {
 
   const [accelerometerData, setAccelerometerData] = useState<SensorData>([]);
   const [gyroscopeData, setGyroscopeData] = useState<SensorData>([]);
+  const [magnetometerData, setMagnetometerData] = useState<SensorData>([]);
   const [displayAccelerometerData, setDisplayAccelerometerData] = useState<SensorData>([]);
   const [displayGyroscopeData, setDisplayGyroscopeData] = useState<SensorData>([]);
-  const [magnetometerData, setMagnetometerData] = useState<SensorData>([]);
   const [displayMagnetometerData, setDisplayMagnetometerData] = useState<SensorData>([]);
 
   const accelerometerDataRef = useRef<SensorData>([]);
