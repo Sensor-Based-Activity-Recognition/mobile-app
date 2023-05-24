@@ -8,6 +8,7 @@ import axios from 'axios';
 import { SensorData, Payload, Reading } from './lib/types';
 import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -15,7 +16,8 @@ function App(): JSX.Element {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
-  const [activity, setActivity] = useState("");
+  const [model, setModel] = useState('CNN');
+  const [activity, setActivity] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const [accelerometerData, setAccelerometerData] = useState<SensorData>([]);
@@ -110,7 +112,7 @@ function App(): JSX.Element {
     try {
       // Call API
       console.log("Sending data to server... (first 100 chars", data.slice(0, 100));
-      const response = await axios.post('https://sbar.fuet.ch/CNN', data, {
+      const response = await axios.post(`https://sbar.fuet.ch/${model}`, data, {
         headers: { 'Content-Type': 'application/octet-stream' }
       });
       // print info on response
@@ -159,6 +161,13 @@ function App(): JSX.Element {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={backgroundStyle.backgroundColor} />
       <View style={styles.sectionContainer}>
         <Text style={[isDarkMode ? styles.lightTitle : styles.darkTitle]}>Activity Recognition</Text>
+        <Picker
+          selectedValue={model}
+          onValueChange={(value: string) => setModel(value)}
+        >
+          <Picker.Item label="CNN" value="CNN" />
+          <Picker.Item label="HistGradientBoost" value="HGBC" />
+        </Picker>
         <Button title="Start Recording" onPress={recordAndSendData} disabled={isLoading} />
         {isLoading && (
           <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />

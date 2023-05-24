@@ -10,12 +10,14 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-picker/picker": "^2.4.10",
     "axios": "^1.4.0",
     "buffer": "^6.0.3",
     "pako": "^2.1.0",
     "react": "18.2.0",
     "react-native": "^0.71.8",
     "react-native-fs": "^2.20.0",
+    "react-native-picker": "^4.3.7",
     "react-native-sensors": "^7.3.6",
     "react-native-share": "^8.2.2"
   },
