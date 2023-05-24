@@ -33,11 +33,6 @@ function App(): JSX.Element {
   const magnetometerDataRef = useRef<SensorData>([]);
 
   useEffect(() => {
-    console.log('Locking to portrait')
-    Orientation.lockToPortrait();
-  }, []);
-
-  useEffect(() => {
     if(isLoading) {
       setUpdateIntervalForType(SensorTypes.accelerometer, 20); // 100 Hz (20 ms)
       setUpdateIntervalForType(SensorTypes.gyroscope, 20); // 100 Hz (20 ms)

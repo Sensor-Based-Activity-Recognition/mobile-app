@@ -6403,11 +6403,6 @@
   "resolved" "https://registry.npmjs.org/react-native-gradle-plugin/-/react-native-gradle-plugin-0.71.18.tgz"
   "version" "0.71.18"
 
-"react-native-orientation-locker@^1.5.0":
-  "integrity" "sha512-4XOCGmNN4BXg5JUFjUuXpsfhPJmbA3LkQilJO1ed+6vL97teTdG2w5IEevKiqL9/hPjeWE8YYtX/YW+yp53hkg=="
-  "resolved" "https://registry.npmjs.org/react-native-orientation-locker/-/react-native-orientation-locker-1.5.0.tgz"
-  "version" "1.5.0"
-
 "react-native-picker@^4.3.7":
   "integrity" "sha512-bqY0FOsgNe/svnlV7CTvDKjqca5iZr0E0h4gYO8LDh9alxGK7P6bTvqSx6VwDR144moHAG7dsKGrSH2r8bTx2Q=="
   "resolved" "https://registry.npmjs.org/react-native-picker/-/react-native-picker-4.3.7.tgz"
@@ -6425,7 +6420,7 @@
   "resolved" "https://registry.npmjs.org/react-native-share/-/react-native-share-8.2.2.tgz"
   "version" "8.2.2"
 
-"react-native-windows@*", "react-native-windows@>=0.63.3":
+"react-native-windows@*":
   "integrity" "sha512-nL3XVYJCyWDo3f82WAqiAEkS9S2sqUaUjBkKguJpt7BObP9xkCZmnoYY1U928W8GkGd7s+OarHrNvptsDV06gw=="
   "resolved" "https://registry.npmjs.org/react-native-windows/-/react-native-windows-0.71.14.tgz"
   "version" "0.71.14"
@@ -6466,7 +6461,7 @@
     "whatwg-fetch" "^3.0.0"
     "ws" "^6.2.2"
 
-"react-native@*", "react-native@^0.71.0", "react-native@^0.71.8", "react-native@>=0.39.0", "react-native@>=0.57", "react-native@>=0.63.2":
+"react-native@*", "react-native@^0.71.0", "react-native@^0.71.8", "react-native@>=0.39.0", "react-native@>=0.57":
   "integrity" "sha512-ftMAuhpgTkbHU9brrqsEyxcNrpYvXKeATY+if22Nfhhg1zW+6wn95w9otwTnA3xHkljPCbng8mUhmmERjGEl7g=="
   "resolved" "https://registry.npmjs.org/react-native/-/react-native-0.71.8.tgz"
   "version" "0.71.8"
@@ -6528,7 +6523,7 @@
     "react-shallow-renderer" "^16.15.0"
     "scheduler" "^0.23.0"
 
-"react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^18.2.0", "react@>=16", "react@>=16.13.1", "react@18.2.0":
+"react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^18.2.0", "react@>=16", "react@18.2.0":
   "integrity" "sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ=="
   "resolved" "https://registry.npmjs.org/react/-/react-18.2.0.tgz"
   "version" "18.2.0"
