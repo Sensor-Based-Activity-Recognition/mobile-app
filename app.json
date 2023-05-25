@@ -1,4 +1,17 @@
 {
   "name": "ActivityRecognitionApp",
-  "displayName": "ActivityRecognitionApp"
+  "displayName": "ActivityRecognitionApp",
+  "expo": {
+    "name": "ActivityRecognitionApp",
+    "slug": "ActivityRecognitionApp",
+    "ios": {
+      "bundleIdentifier": "com.ActivityRecognitionApp"
+    },    "android": {
+      "package": "com.ActivityRecognitionApp"
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "http://localhost:3000/api/manifest"
+    }
+  }
 }
