@@ -6403,11 +6403,6 @@
   "resolved" "https://registry.npmjs.org/react-native-gradle-plugin/-/react-native-gradle-plugin-0.71.18.tgz"
   "version" "0.71.18"
 
-"react-native-picker@^4.3.7":
-  "integrity" "sha512-bqY0FOsgNe/svnlV7CTvDKjqca5iZr0E0h4gYO8LDh9alxGK7P6bTvqSx6VwDR144moHAG7dsKGrSH2r8bTx2Q=="
-  "resolved" "https://registry.npmjs.org/react-native-picker/-/react-native-picker-4.3.7.tgz"
-  "version" "4.3.7"
-
 "react-native-sensors@^7.3.6":
   "integrity" "sha512-h3ispHU6BqhVsMMBIMfJWdwoqHNoSae1wv2RNl2hVOoV1rbFuSbQluQsuZirva6uRDaZVeVwaE5th3HIf+9ykQ=="
   "resolved" "https://registry.npmjs.org/react-native-sensors/-/react-native-sensors-7.3.6.tgz"
