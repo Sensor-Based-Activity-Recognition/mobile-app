@@ -1,6 +1,5 @@
 {
   "name": "ActivityRecognitionApp",
-  "displayName": "ActivityRecognitionApp",
   "extra": {
     "eas": {
       "projectId": "5fe1f1e4-e380-4cb5-ab45-7664f2bbf561"
