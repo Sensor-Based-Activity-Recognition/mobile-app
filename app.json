@@ -6,12 +6,20 @@
     "slug": "ActivityRecognitionApp",
     "ios": {
       "bundleIdentifier": "com.ActivityRecognitionApp"
-    },    "android": {
-      "package": "com.ActivityRecognitionApp"
+    },
+    "android": {
+      "package": "com.ActivityRecognitionApp",
+      "jsEngine": "hermes"
     },
     "runtimeVersion": "1.0.0",
     "updates": {
-      "url": "http://localhost:3000/api/manifest"
-    }
+      "url": "https://u.expo.dev/56c060aa-15ef-4e4d-aca0-a6dc6365d1e2"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "56c060aa-15ef-4e4d-aca0-a6dc6365d1e2"
+      }
+    },
+    "owner": "yvokeller"
   }
 }
