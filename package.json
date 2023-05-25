@@ -13,6 +13,8 @@
     "@react-native-picker/picker": "^2.4.10",
     "axios": "^1.4.0",
     "buffer": "^6.0.3",
+    "expo": "^48.0.0",
+    "expo-updates": "~0.16.4",
     "pako": "^2.1.0",
     "react": "18.2.0",
     "react-native": "^0.71.8",
