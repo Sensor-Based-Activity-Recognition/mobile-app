@@ -160,6 +160,7 @@ function App(): JSX.Element {
     <SafeAreaView style={[backgroundStyle, styles.container]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={backgroundStyle.backgroundColor} />
       <Picker
+        itemStyle={{ color: isDarkMode ? 'white' : 'black' }}
         selectedValue={model}
         onValueChange={(value: string) => setModel(value)}
       >
