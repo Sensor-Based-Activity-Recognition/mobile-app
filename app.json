@@ -6,9 +6,7 @@
     }
   },
   "owner": "yvokeller",
-  "runtimeVersion": {
-    "policy": "sdkVersion"
-  },
+  "runtimeVersion": "48.0.0",
   "updates": {
     "url": "https://u.expo.dev/5fe1f1e4-e380-4cb5-ab45-7664f2bbf561"
   },
