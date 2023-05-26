@@ -87,8 +87,8 @@ function App(): JSX.Element {
 
   useEffect(() => {
     const classifyAndAppendActivity = async () => {
-      const now: number = new Date().getTime() * 1000000;
-      const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - 6000000000;
+      const now: number = new Date().getTime() * 1_000_000;
+      const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - 6_000_000_000;
       const sensorData: Payload = {
         accelerometer: accelerometerDataRef.current.filter(keepLastSeconds),
         gyroscope: gyroscopeDataRef.current.filter(keepLastSeconds),
@@ -97,8 +97,8 @@ function App(): JSX.Element {
 
       // get the minimum timestamp of accelerometer data
       const timestamps: number[] = sensorData.accelerometer.map((reading) => reading.timestamp);
-      const deltaSeconds: number = (Math.max(...timestamps) - Math.min(...timestamps)) / 1000000000;
-      console.log("deltaSeconds", deltaSeconds);
+      const deltaSeconds: number = (Math.max(...timestamps) - Math.min(...timestamps)) / 1_000_000_000;
+      console.log("Number of seconds of data", deltaSeconds);
       if (deltaSeconds < 5) {
         console.log("Not enough data");
         return;
@@ -120,27 +120,25 @@ function App(): JSX.Element {
         probabilities: response["0"],
       };
 
+      // append the activity to the list of activities
       activitiesRef.current = [...activitiesRef.current, activity];
       setActivities(activitiesRef.current);
       setActivity(activitiesRef.current.length.toString());
 
-      deleteDataOlderThan(10);
+      deleteDataOlderThan(5);
     };
     const interval = setInterval(() => {
       if (isLoadingRef.current) {
-        console.log("Loading");
         classifyAndAppendActivity();
-      } else {
-        console.log("Not loading");
       }
-    }, 5000);
+    }, 5_000);
 
     return () => clearInterval(interval);
   }, []);
 
   function deleteDataOlderThan(seconds: number = 5) {
-    const now = new Date().getTime() * 1000000;
-    const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - seconds * 1000000000;
+    const now = new Date().getTime() * 1_000_000;
+    const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - seconds * 1_000_000_000;
     accelerometerDataRef.current = accelerometerDataRef.current.filter(keepLastSeconds);
     gyroscopeDataRef.current = gyroscopeDataRef.current.filter(keepLastSeconds);
     magnetometerDataRef.current = magnetometerDataRef.current.filter(keepLastSeconds);
