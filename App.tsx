@@ -5,7 +5,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading } from './lib/types';
+import { SensorData, Payload, Reading, Activties } from './lib/types';
 import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
@@ -18,6 +18,7 @@ function App(): JSX.Element {
 
   const [model, setModel] = useState('CNN');
   const [activity, setActivity] = useState('');
+  const [activities, setActivities] = useState<Activties>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const [accelerometerData, setAccelerometerData] = useState<SensorData>([]);
@@ -76,6 +77,14 @@ function App(): JSX.Element {
       setDisplayGyroscopeData(gyroscopeDataRef.current);
       setDisplayMagnetometerData(magnetometerDataRef.current);
     }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isLoading) return;
+       // send the data here
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
