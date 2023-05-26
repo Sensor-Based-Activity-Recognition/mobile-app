@@ -123,7 +123,8 @@ function App(): JSX.Element {
       // append the activity to the list of activities
       activitiesRef.current = [...activitiesRef.current, activity];
       setActivities(activitiesRef.current);
-      setActivity(activitiesRef.current.length.toString());
+      // set activity to current length and latest activity
+      setActivity(activitiesRef.current.length.toString() + " " + activity.activity);
 
       deleteDataOlderThan(5);
     };
