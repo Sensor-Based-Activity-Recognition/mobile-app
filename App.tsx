@@ -5,7 +5,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading, Activties } from './lib/types';
+import { SensorData, Payload, Reading, Activity, Activties } from './lib/types';
 import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
