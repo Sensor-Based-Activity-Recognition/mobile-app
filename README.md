@@ -12,6 +12,10 @@ React Native is a suitable choice for our Sensor-Based Activity Recognition app 
 
 Compared to other cross-platform frameworks, React Native's performance is closer to that of native apps since it uses native components and APIs, resulting in a smoother user experience. Additionally, React Native's large and active community ensures ongoing support, frequent updates, and a wealth of resources for developers.
 
+### Setup
+- Install Node.js (https://nodejs.org/en/download/)
+- Install this project's dependencies by running `npm install` in the project root directory
+
 ## How to run
 
 See this section for how to run the app on your device or emulator.
