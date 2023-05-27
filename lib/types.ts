@@ -7,3 +7,13 @@ export type Payload = {
   gyroscope: SensorData,
   magnetometer: SensorData,
 };
+
+export type Activity = {
+  id: number,
+  activity: string,
+  probabilities: {
+    [key: string]: number
+  }
+};
+
+export type Activties = Activity[];

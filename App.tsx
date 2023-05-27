@@ -5,7 +5,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading } from './lib/types';
+import { SensorData, Payload, Reading, Activity, Activties } from './lib/types';
 import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
@@ -18,7 +18,12 @@ function App(): JSX.Element {
 
   const [model, setModel] = useState('CNN');
   const [activity, setActivity] = useState('');
+  const [activities, setActivities] = useState<Activties>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const modelRef = useRef('CNN');
+  const activitiesRef = useRef<Activties>([]);
+  const isLoadingRef = useRef(false);
 
   const [accelerometerData, setAccelerometerData] = useState<SensorData>([]);
   const [gyroscopeData, setGyroscopeData] = useState<SensorData>([]);
@@ -79,46 +84,98 @@ function App(): JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
-  const recordAndSendData = async () => {
-    // Clear sensor data
-    accelerometerDataRef.current = [];
-    gyroscopeDataRef.current = [];
-    magnetometerDataRef.current = [];
-    setAccelerometerData([]);
-    setGyroscopeData([]);
-    setMagnetometerData([]);
-  
-    // Collect sensor data for 10 seconds
-    setIsLoading(true);
-    setActivity("Recording data...");
-    setTimeout(async () => {
+
+  useEffect(() => {
+    const classifyAndAppendActivity = async () => {
+      const now: number = new Date().getTime() * 1_000_000;
+      const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - 6_000_000_000;
       const sensorData: Payload = {
-        accelerometer: accelerometerDataRef.current,
-        gyroscope: gyroscopeDataRef.current,
-        magnetometer: magnetometerDataRef.current,
+        accelerometer: accelerometerDataRef.current.filter(keepLastSeconds),
+        gyroscope: gyroscopeDataRef.current.filter(keepLastSeconds),
+        magnetometer: magnetometerDataRef.current.filter(keepLastSeconds),
       };
-  
-      const compressedData = await transformData(sensorData);
 
-      setActivity("Fetching data...");
-      const activity = await sendDataToServer(compressedData);
+      // get the minimum timestamp of accelerometer data
+      const timestamps: number[] = sensorData.accelerometer.map((reading) => reading.timestamp);
+      const deltaSeconds: number = (Math.max(...timestamps) - Math.min(...timestamps)) / 1_000_000_000;
+      console.log("Number of seconds of data", deltaSeconds);
+      if (deltaSeconds < 5) {
+        console.log("Not enough data");
+        return;
+      }
 
-      setActivity(activity);
-      setIsLoading(false);
-    }, 16000);
+      // transform the data & request the prediction
+      const transformedData: Uint8Array = transformData(sensorData);
+      const response: any = await sendDataToServer(transformedData);
+
+      // get the activity with the highest probability
+      const activities: [string, number][] = Object.entries(response["0"]);
+      const highestActivity: [string, number] = activities.reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
+      console.log("highestActivity", highestActivity);
+
+      const nextActivityId: number = activitiesRef.current.length + 1;
+      const activity: Activity = {
+        id: nextActivityId,
+        activity: highestActivity[0],
+        probabilities: response["0"], // referring to window 0
+      };
+
+      // append the activity to the list of activities
+      activitiesRef.current = [...activitiesRef.current, activity];
+      setActivities(activitiesRef.current);
+      // set activity to current length and latest activity
+      setActivity(activitiesRef.current.length.toString() + " " + activity.activity);
+
+      deleteDataOlderThan(5);
+    };
+    const interval = setInterval(() => {
+      if (isLoadingRef.current) {
+        classifyAndAppendActivity();
+      }
+    }, 5_000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const deleteDataOlderThan = (seconds: number = 5) => {
+    const now = new Date().getTime() * 1_000_000;
+    const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - seconds * 1_000_000_000;
+    accelerometerDataRef.current = accelerometerDataRef.current.filter(keepLastSeconds);
+    gyroscopeDataRef.current = gyroscopeDataRef.current.filter(keepLastSeconds);
+    magnetometerDataRef.current = magnetometerDataRef.current.filter(keepLastSeconds);
+    setAccelerometerData(accelerometerDataRef.current);
+    setGyroscopeData(gyroscopeDataRef.current);
+    setMagnetometerData(magnetometerDataRef.current);
+  }
+
+  const toggleRecording = () => {
+    if (isLoading) {
+      isLoadingRef.current = false;
+      setIsLoading(isLoadingRef.current);
+    } else {
+      accelerometerDataRef.current = [];
+      gyroscopeDataRef.current = [];
+      magnetometerDataRef.current = [];
+      setAccelerometerData([]);
+      setGyroscopeData([]);
+      setMagnetometerData([]);
+      isLoadingRef.current = true;
+      setIsLoading(isLoadingRef.current);
+    }
   };
 
   const sendDataToServer = async (data: Uint8Array) => {
     try {
       // Call API
-      console.log('Calling API using model:', model)
-      const response = await axios.post(`https://sbar.fuet.ch/${model}`, data, {
+      console.log('Calling API using model:', modelRef.current);
+      const response = await axios.post(`https://sbar.fuet.ch/${modelRef.current}`, data, {
         headers: { 'Content-Type': 'application/octet-stream' }
       });
       // print info on response
       console.log("Response from server:", response.status, response.statusText);
       console.log(response.data)
-      return JSON.stringify(response.data);
+      // convert strings that look like numbers to numbers
+      return response.data;
     } catch (error) {
       console.error(error);
       return "Error";
@@ -162,14 +219,17 @@ function App(): JSX.Element {
       <Picker
         itemStyle={{ color: isDarkMode ? 'white' : 'black' }}
         selectedValue={model}
-        onValueChange={(value: string) => setModel(value)}
+        onValueChange={(value: string) => {
+          modelRef.current = value;
+          setModel(modelRef.current);
+        }}
       >
         <Picker.Item label="CNN" value="CNN" />
         <Picker.Item label="HistGradientBoost" value="HGBC" />
       </Picker>
       <View style={styles.sectionContainer}>
         <Text style={[isDarkMode ? styles.lightTitle : styles.darkTitle]}>Activity Recognition</Text>
-        <Button title="Start Recording" onPress={recordAndSendData} disabled={isLoading} />
+        <Button title={isLoading ? "Stop recording" : "Start Recording"} onPress={toggleRecording} />
         {isLoading && (
           <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
         )}
@@ -181,6 +241,7 @@ function App(): JSX.Element {
       </View>
     </SafeAreaView>
   );
+
 }
 
 interface SensorDataDisplayProps {
