@@ -104,7 +104,7 @@ function App(): JSX.Element {
         return;
       }
 
-      // transform the data
+      // transform the data & request the prediction
       const transformedData: Uint8Array = transformData(sensorData);
       const response: any = await sendDataToServer(transformedData);
 
@@ -117,7 +117,7 @@ function App(): JSX.Element {
       const activity: Activity = {
         id: nextActivityId,
         activity: highestActivity[0],
-        probabilities: response["0"],
+        probabilities: response["0"], // referring to window 0
       };
 
       // append the activity to the list of activities
@@ -137,7 +137,7 @@ function App(): JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
-  function deleteDataOlderThan(seconds: number = 5) {
+  const deleteDataOlderThan = (seconds: number = 5) => {
     const now = new Date().getTime() * 1_000_000;
     const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - seconds * 1_000_000_000;
     accelerometerDataRef.current = accelerometerDataRef.current.filter(keepLastSeconds);
