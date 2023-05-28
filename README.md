@@ -8,7 +8,7 @@ React Native is a suitable choice for our Sensor-Based Activity Recognition app 
 
 - Firstly, it offers cross-platform compatibility, allowing the app to run on both iOS and Android devices. 
 - Secondly, React Native provides a JavaScript-based development environment, enabling us to write code once and reuse it across platforms, saving time and effort.
-- Thirdly, React Native provides access to a wide range of native device functionalities, including sensor data collection, through various community-supported libraries. This allows for efficient sensor integration and accurate activity recognition. 
+- Thirdly, React Native provides access to a wide range of native device functionalities, including sensor data collection, through various community-supported libraries. This allows for efficient sensor integration and accurate activity recognition.
 
 Compared to other cross-platform frameworks, React Native's performance is closer to that of native apps since it uses native components and APIs, resulting in a smoother user experience. Additionally, React Native's large and active community ensures ongoing support, frequent updates, and a wealth of resources for developers.
 
@@ -25,7 +25,7 @@ See this section for how to run the app on your device or emulator.
 **Pre-requisites:**
 
 - Android Studio
-- JRE 16 (Via Android Studio: Gradle Settings, then open Gradle JRE dropdown and select "Download JDK")
+- JRE 17 (via Android Studio: Gradle Settings, then open Gradle JRE dropdown and select "Download JDK")
 
 Create ENV Variables in .bashrc or .zshrc (update paths to your own):
 
