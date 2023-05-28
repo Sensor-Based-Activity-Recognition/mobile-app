@@ -10,6 +10,7 @@ import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Svg, Line, Circle, Text as SVGText, TSpan } from 'react-native-svg';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -304,13 +305,13 @@ const VerticalTimeline = ({ activities }: VerticalTimelineProps) => {
 
   const activityIconName = (activity: string) => {
     switch (activity) {
-      case 'Laufen': return 'run-outline'; // replace with appropriate icon names
-      case 'Rennen': return 'walk-outline'; // replace with appropriate icon names
-      case 'Sitzen': return 'sit-chair-outline'; // replace with appropriate icon names
-      case 'Stehen': return 'stand-up-outline'; // replace with appropriate icon names
-      case 'Treppenlaufen': return 'stairs-outline'; // replace with appropriate icon names
-      case 'Velofahren': return 'bicycle-outline'; // replace with appropriate icon names
-      default: return 'help-circle-outline'; // default icon
+      case 'Sitzen': return 'chair'
+      case 'Stehen': return 'male';
+      case 'Laufen': return 'walking';
+      case 'Rennen': return 'running';
+      case 'Treppenlaufen': return 'ski-lift';
+      case 'Velofahren': return 'biking';
+      default: return 'question';
     }
   };
 
@@ -331,6 +332,7 @@ const VerticalTimeline = ({ activities }: VerticalTimelineProps) => {
             const hours = date.getHours().toString().padStart(2, '0');
             const minutes = date.getMinutes().toString().padStart(2, '0');
             const seconds = date.getSeconds().toString().padStart(2, '0');
+            console.log('SVG is updated')
 
             return (
               <React.Fragment key={activity.id}>
@@ -352,18 +354,18 @@ const VerticalTimeline = ({ activities }: VerticalTimelineProps) => {
                   r="8"
                   fill={isDarkMode ? Colors.light : Colors.dark}
                 />
-                {/* <Icon
+                <FontAwesome5
                   name={activityIconName(activity.activity)}
                   size={30} // size of the icon
                   color={isDarkMode ? Colors.light : Colors.dark}
                   style={{
                     position: 'absolute',
-                    left: 40,
-                    top: 40 + i * distanceBetweenEntries
+                    left: 75,
+                    top: 45 + i * distanceBetweenEntries
                   }}
-                /> */}
+                />
                 <SVGText
-                  x="80"
+                  x="100"
                   y={55 + i * distanceBetweenEntries}
                   fill={isDarkMode ? Colors.light : Colors.dark}
                 >
