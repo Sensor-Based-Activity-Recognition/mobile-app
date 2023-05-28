@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { accelerometer, gyroscope, magnetometer, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
 import { Colors } from 'react-native/Libraries/NewAppScreen';
@@ -302,11 +302,11 @@ const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetwe
   const getActivityIconName = (activity: string) => {
     console.log('icon name', activity)
     switch (activity) {
-      case 'Sitzen': return 'chair'
+      case 'Sitzen': return 'couch'
       case 'Stehen': return 'male';
       case 'Laufen': return 'walking';
       case 'Rennen': return 'running';
-      case 'Treppenlaufen': return 'ski-lift';
+      case 'Treppenlaufen': return 'house';
       case 'Velofahren': return 'biking';
       default: return 'question';
     }
@@ -334,16 +334,25 @@ const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetwe
         color={isDarkMode ? Colors.light : Colors.dark}
         style={{
           position: 'absolute',
-          left: 75,
-          top: 45 + index * distanceBetweenEntries
+          left: 80,
+          top: 35 + index * distanceBetweenEntries
         }}
       />
       <SVGText
-        x="100"
-        y={55 + index * distanceBetweenEntries}
+        x="130"
+        y={45 + index * distanceBetweenEntries}
         fill={isDarkMode ? Colors.light : Colors.dark}
+        fontSize="20"
       >
         {activity.activity}
+      </SVGText>
+      <SVGText
+        x="130"
+        y={65 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+        fontSize="15"
+      >
+        {(activity.probabilities[activity.activity] * 100).toFixed(1)}%
       </SVGText>
     </React.Fragment>
   );
@@ -355,14 +364,14 @@ interface ActivityTimelineProps {
 
 const ActivityTimeline = ({ activities }: ActivityTimelineProps) => {
   const isDarkMode = useColorScheme() === 'dark';
-  
-  // Define distance between timepoints
-  const distanceBetweenEntries = 100; // Adjust this as needed
+
+  // Reverse the activities so that the latest activity is at the top
+  activities = useMemo(() => [...activities].reverse(), [activities]);
 
   // Calculate dynamic SVG height based on number of timepoints and distance between them
-  const svgHeight = (activities.length * distanceBetweenEntries);
-
   const screenWidth = Dimensions.get('window').width;
+  const distanceBetweenEntries = 100; // Adjust this as needed
+  const svgHeight = useMemo(() => activities.length * distanceBetweenEntries, [activities, distanceBetweenEntries]);
   const svgWidth = screenWidth * 0.8;
 
   return (
