@@ -5,7 +5,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading, Activity, Activities, ChartData } from './lib/types';
+import { SensorData, Payload, Reading, Activity, Activities } from './lib/types';
 import { convertToCSV, mergeActivitySequence, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
@@ -128,8 +128,6 @@ function App(): JSX.Element {
       setActivities(activitiesRef.current);
       // set activity to current length and latest activity
       setActivity(activitiesRef.current.length.toString() + " " + activity.activity);
-
-      console.log(activitiesRef.current)
 
       deleteDataOlderThan(5);
     };
