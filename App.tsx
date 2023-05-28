@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator, Dimensions } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { accelerometer, gyroscope, magnetometer, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
@@ -9,8 +9,7 @@ import { SensorData, Payload, Reading, Activity, Activties, ChartData } from './
 import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { LineChart } from 'react-native-chart-kit';
-import { Dataset } from 'react-native-chart-kit/dist/HelperTypes';
+import { Svg, Line, Circle, Text as SVGText, TSpan } from 'react-native-svg';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -221,8 +220,11 @@ function App(): JSX.Element {
   return (
     <SafeAreaView style={[backgroundStyle, styles.container]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={backgroundStyle.backgroundColor} />
+      <View style={styles.titleContainer}>
+        <Text style={[isDarkMode ? styles.lightTitle : styles.darkTitle]}>Activity Recognition</Text>
+      </View>
       <Picker
-        itemStyle={{ color: isDarkMode ? 'white' : 'black' }}
+        itemStyle={{ color: isDarkMode ? 'white' : 'black', height: 60 }}
         selectedValue={model}
         onValueChange={(value: string) => {
           modelRef.current = value;
@@ -232,19 +234,22 @@ function App(): JSX.Element {
         <Picker.Item label="CNN" value="CNN" />
         <Picker.Item label="HistGradientBoost" value="HGBC" />
       </Picker>
-      <View style={styles.sectionContainer}>
-        <Text style={[isDarkMode ? styles.lightTitle : styles.darkTitle]}>Activity Recognition</Text>
+      <View style={styles.titleContainer}>
         <Button title={isLoading ? "Stop recording" : "Start Recording"} onPress={toggleRecording} />
         {isLoading && (
-          <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
+            <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
         )}
-        <ActivityChart/>
-        <Text style={[styles.activityText, { color: isDarkMode ? Colors.light : Colors.dark }]}>{activity}</Text>
-        <SensorDataDisplay sensorName="Accelerometer" sensorReading={latestDisplayAccelerometerData} />
-        <SensorDataDisplay sensorName="Gyroscope" sensorReading={latestDisplayGyroscopeData} />
-        <SensorDataDisplay sensorName="Magnetometer" sensorReading={latestDisplayMagnetometerData} />
-        <Button title="Share Sensor Data" onPress={shareSensorData}  disabled={isLoading} />
       </View>
+      <ScrollView>
+        <View style={styles.sectionContainer}>
+          <VerticalTimeline activities={activities} />
+          <Text style={[styles.activityText, { color: isDarkMode ? Colors.light : Colors.dark }]}>{activity}</Text>
+          <SensorDataDisplay sensorName="Accelerometer" sensorReading={latestDisplayAccelerometerData} />
+          <SensorDataDisplay sensorName="Gyroscope" sensorReading={latestDisplayGyroscopeData} />
+          <SensorDataDisplay sensorName="Magnetometer" sensorReading={latestDisplayMagnetometerData} />
+          <Button title="Share Sensor Data" onPress={shareSensorData}  disabled={isLoading} />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 
@@ -280,44 +285,106 @@ const SensorDataDisplay: React.FC<SensorDataDisplayProps> = ({ sensorName, senso
   );
 };
 
-interface ActivityChartProps {
-  data: ChartData;
+interface VerticalTimelineProps {
+  activities: Activties;
 }
 
-const ActivityChart = () => {
-  const data = {
-    labels: ["January", "February", "March", "April", "May", "June"],
-    datasets: [
-      {
-        data: [20, 45, 28, 80, 99, 43],
-        color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`, // optional
-        strokeWidth: 2 // optional
-      }
-    ],
-    legend: ["Rainy Days"] // optional
-  };
+const VerticalTimeline = ({ activities }: VerticalTimelineProps) => {
+  const isDarkMode = useColorScheme() === 'dark';
+  
+  // Define distance between timepoints
+  const distanceBetweenEntries = 100; // Adjust this as needed
 
-  const chartConfig = {
-    color: (opacity = 1) => `rgba(26, 255, 146, ${opacity})`,
-    strokeWidth: 2, // optional, default 3
-    barPercentage: 0.5,
-    useShadowColorFromDataset: false // optional
+  // Calculate dynamic SVG height based on number of timepoints and distance between them
+  const svgHeight = (activities.length * distanceBetweenEntries);
+
+  const screenWidth = Dimensions.get('window').width;
+  const svgWidth = screenWidth * 0.8;
+
+
+  const activityIconName = (activity: string) => {
+    switch (activity) {
+      case 'Laufen': return 'run-outline'; // replace with appropriate icon names
+      case 'Rennen': return 'walk-outline'; // replace with appropriate icon names
+      case 'Sitzen': return 'sit-chair-outline'; // replace with appropriate icon names
+      case 'Stehen': return 'stand-up-outline'; // replace with appropriate icon names
+      case 'Treppenlaufen': return 'stairs-outline'; // replace with appropriate icon names
+      case 'Velofahren': return 'bicycle-outline'; // replace with appropriate icon names
+      default: return 'help-circle-outline'; // default icon
+    }
   };
 
   return (
-    <LineChart
-      data={data}
-      width={Dimensions.get("window").width}
-      height={220}
-      chartConfig={chartConfig}
-    />
+    <ScrollView>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Svg height={svgHeight} width={svgWidth}>
+          <Line
+            x1="65"
+            y1="50"
+            x2="65"
+            y2={svgHeight - 50}
+            stroke={isDarkMode ? Colors.light : Colors.dark}
+            strokeWidth="2"
+          />
+          {activities.map((activity, i) => {
+            const date = new Date(activity.timestamp / 1000000);
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+
+            return (
+              <React.Fragment key={activity.id}>
+                <SVGText
+                  x="0"
+                  y={55 + i * distanceBetweenEntries}
+                  fill={isDarkMode ? Colors.light : Colors.dark}
+                >
+                  {`${hours}:${minutes}:`}
+                  <TSpan
+                    fontWeight="bold"
+                  >
+                    {seconds}
+                  </TSpan>
+                </SVGText>
+                <Circle
+                  cx="65"
+                  cy={50 + i * distanceBetweenEntries}
+                  r="8"
+                  fill={isDarkMode ? Colors.light : Colors.dark}
+                />
+                {/* <Icon
+                  name={activityIconName(activity.activity)}
+                  size={30} // size of the icon
+                  color={isDarkMode ? Colors.light : Colors.dark}
+                  style={{
+                    position: 'absolute',
+                    left: 40,
+                    top: 40 + i * distanceBetweenEntries
+                  }}
+                /> */}
+                <SVGText
+                  x="80"
+                  y={55 + i * distanceBetweenEntries}
+                  fill={isDarkMode ? Colors.light : Colors.dark}
+                >
+                  {activity.activity}
+                </SVGText>
+              </React.Fragment>
+            );
+          })}
+        </Svg>
+      </View>
+    </ScrollView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  titleContainer: {
+    marginTop: 4,
+    alignItems: 'center',
   },
   sectionContainer: {
     marginTop: 0,
