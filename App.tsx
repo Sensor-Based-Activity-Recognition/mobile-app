@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator, Dimensions } from 'react-native';
 import { accelerometer, gyroscope, magnetometer, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading, Activity, Activties } from './lib/types';
+import { SensorData, Payload, Reading, Activity, Activties, ChartData } from './lib/types';
 import { convertToCSV, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { LineChart } from 'react-native-chart-kit';
+import { Dataset } from 'react-native-chart-kit/dist/HelperTypes';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -118,6 +120,7 @@ function App(): JSX.Element {
         id: nextActivityId,
         activity: highestActivity[0],
         probabilities: response["0"], // referring to window 0
+        timestamp: now,
       };
 
       // append the activity to the list of activities
@@ -125,6 +128,8 @@ function App(): JSX.Element {
       setActivities(activitiesRef.current);
       // set activity to current length and latest activity
       setActivity(activitiesRef.current.length.toString() + " " + activity.activity);
+
+      console.log(activitiesRef.current)
 
       deleteDataOlderThan(5);
     };
@@ -233,6 +238,7 @@ function App(): JSX.Element {
         {isLoading && (
           <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
         )}
+        <ActivityChart/>
         <Text style={[styles.activityText, { color: isDarkMode ? Colors.light : Colors.dark }]}>{activity}</Text>
         <SensorDataDisplay sensorName="Accelerometer" sensorReading={latestDisplayAccelerometerData} />
         <SensorDataDisplay sensorName="Gyroscope" sensorReading={latestDisplayGyroscopeData} />
@@ -273,6 +279,41 @@ const SensorDataDisplay: React.FC<SensorDataDisplayProps> = ({ sensorName, senso
     </>
   );
 };
+
+interface ActivityChartProps {
+  data: ChartData;
+}
+
+const ActivityChart = () => {
+  const data = {
+    labels: ["January", "February", "March", "April", "May", "June"],
+    datasets: [
+      {
+        data: [20, 45, 28, 80, 99, 43],
+        color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`, // optional
+        strokeWidth: 2 // optional
+      }
+    ],
+    legend: ["Rainy Days"] // optional
+  };
+
+  const chartConfig = {
+    color: (opacity = 1) => `rgba(26, 255, 146, ${opacity})`,
+    strokeWidth: 2, // optional, default 3
+    barPercentage: 0.5,
+    useShadowColorFromDataset: false // optional
+  };
+
+  return (
+    <LineChart
+      data={data}
+      width={Dimensions.get("window").width}
+      height={220}
+      chartConfig={chartConfig}
+    />
+  );
+};
+
 
 const styles = StyleSheet.create({
   container: {

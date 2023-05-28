@@ -16,9 +16,11 @@
     "pako": "^2.1.0",
     "react": "18.2.0",
     "react-native": "^0.71.8",
+    "react-native-chart-kit": "^6.12.0",
     "react-native-fs": "^2.20.0",
     "react-native-sensors": "^7.3.6",
-    "react-native-share": "^8.2.2"
+    "react-native-share": "^8.2.2",
+    "react-native-svg": "^13.9.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
