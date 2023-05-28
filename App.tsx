@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { accelerometer, gyroscope, magnetometer, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
 import { Colors } from 'react-native/Libraries/NewAppScreen';
@@ -243,7 +243,7 @@ function App(): JSX.Element {
       </View>
       <ScrollView>
         <View style={styles.sectionContainer}>
-          <VerticalTimeline activities={activities} />
+          <ActivityTimeline activities={activities} />
           <Text style={[styles.activityText, { color: isDarkMode ? Colors.light : Colors.dark }]}>{activity}</Text>
           <SensorDataDisplay sensorName="Accelerometer" sensorReading={latestDisplayAccelerometerData} />
           <SensorDataDisplay sensorName="Gyroscope" sensorReading={latestDisplayGyroscopeData} />
@@ -286,24 +286,21 @@ const SensorDataDisplay: React.FC<SensorDataDisplayProps> = ({ sensorName, senso
   );
 };
 
-interface VerticalTimelineProps {
-  activities: Activties;
+interface ActivityTimelineEntryProps {
+  activity: Activity;
+  index: number;
+  isDarkMode: boolean;
+  distanceBetweenEntries: number;
 }
 
-const VerticalTimeline = ({ activities }: VerticalTimelineProps) => {
-  const isDarkMode = useColorScheme() === 'dark';
-  
-  // Define distance between timepoints
-  const distanceBetweenEntries = 100; // Adjust this as needed
+const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetweenEntries }: ActivityTimelineEntryProps) => {
+  const date = new Date(activity.timestamp / 1000000);
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
 
-  // Calculate dynamic SVG height based on number of timepoints and distance between them
-  const svgHeight = (activities.length * distanceBetweenEntries);
-
-  const screenWidth = Dimensions.get('window').width;
-  const svgWidth = screenWidth * 0.8;
-
-
-  const activityIconName = (activity: string) => {
+  const getActivityIconName = (activity: string) => {
+    console.log('icon name', activity)
     switch (activity) {
       case 'Sitzen': return 'chair'
       case 'Stehen': return 'male';
@@ -314,6 +311,59 @@ const VerticalTimeline = ({ activities }: VerticalTimelineProps) => {
       default: return 'question';
     }
   };
+
+  return (
+    <React.Fragment key={activity.id}>
+      <SVGText
+        x="0"
+        y={55 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      >
+        {`${hours}:${minutes}:`}
+        <TSpan fontWeight="bold">{seconds}</TSpan>
+      </SVGText>
+      <Circle
+        cx="65"
+        cy={50 + index * distanceBetweenEntries}
+        r="8"
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      />
+      <FontAwesome5
+        name={getActivityIconName(activity.activity)}
+        size={30} // size of the icon
+        color={isDarkMode ? Colors.light : Colors.dark}
+        style={{
+          position: 'absolute',
+          left: 75,
+          top: 45 + index * distanceBetweenEntries
+        }}
+      />
+      <SVGText
+        x="100"
+        y={55 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      >
+        {activity.activity}
+      </SVGText>
+    </React.Fragment>
+  );
+});
+
+interface ActivityTimelineProps {
+  activities: Activties;
+}
+
+const ActivityTimeline = ({ activities }: ActivityTimelineProps) => {
+  const isDarkMode = useColorScheme() === 'dark';
+  
+  // Define distance between timepoints
+  const distanceBetweenEntries = 100; // Adjust this as needed
+
+  // Calculate dynamic SVG height based on number of timepoints and distance between them
+  const svgHeight = (activities.length * distanceBetweenEntries);
+
+  const screenWidth = Dimensions.get('window').width;
+  const svgWidth = screenWidth * 0.8;
 
   return (
     <ScrollView>
@@ -327,53 +377,15 @@ const VerticalTimeline = ({ activities }: VerticalTimelineProps) => {
             stroke={isDarkMode ? Colors.light : Colors.dark}
             strokeWidth="2"
           />
-          {activities.map((activity, i) => {
-            const date = new Date(activity.timestamp / 1000000);
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const seconds = date.getSeconds().toString().padStart(2, '0');
-            console.log('SVG is updated')
-
-            return (
-              <React.Fragment key={activity.id}>
-                <SVGText
-                  x="0"
-                  y={55 + i * distanceBetweenEntries}
-                  fill={isDarkMode ? Colors.light : Colors.dark}
-                >
-                  {`${hours}:${minutes}:`}
-                  <TSpan
-                    fontWeight="bold"
-                  >
-                    {seconds}
-                  </TSpan>
-                </SVGText>
-                <Circle
-                  cx="65"
-                  cy={50 + i * distanceBetweenEntries}
-                  r="8"
-                  fill={isDarkMode ? Colors.light : Colors.dark}
-                />
-                <FontAwesome5
-                  name={activityIconName(activity.activity)}
-                  size={30} // size of the icon
-                  color={isDarkMode ? Colors.light : Colors.dark}
-                  style={{
-                    position: 'absolute',
-                    left: 75,
-                    top: 45 + i * distanceBetweenEntries
-                  }}
-                />
-                <SVGText
-                  x="100"
-                  y={55 + i * distanceBetweenEntries}
-                  fill={isDarkMode ? Colors.light : Colors.dark}
-                >
-                  {activity.activity}
-                </SVGText>
-              </React.Fragment>
-            );
-          })}
+          {activities.map((activity, index) => (
+            <ActivityTimelineEntry
+              key={activity.id}
+              activity={activity}
+              index={index}
+              isDarkMode={isDarkMode}
+              distanceBetweenEntries={distanceBetweenEntries}
+            />
+          ))}
         </Svg>
       </View>
     </ScrollView>
