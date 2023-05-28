@@ -25,7 +25,7 @@ See this section for how to run the app on your device or emulator.
 **Pre-requisites:**
 
 - Android Studio
-- JRE 17 (via Android Studio: Gradle Settings, then open Gradle JRE dropdown and select "Download JDK")
+- JRE 16/17 (Via Android Studio: Gradle Settings, then open Gradle JRE dropdown and select "Download JDK")
 
 Create ENV Variables in .bashrc or .zshrc (update paths to your own):
 
