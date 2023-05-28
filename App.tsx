@@ -306,7 +306,7 @@ const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetwe
       case 'Stehen': return 'male';
       case 'Laufen': return 'walking';
       case 'Rennen': return 'running';
-      case 'Treppenlaufen': return 'house';
+      case 'Treppenlaufen': return 'hiking';
       case 'Velofahren': return 'biking';
       default: return 'question';
     }
