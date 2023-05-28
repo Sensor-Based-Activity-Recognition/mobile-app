@@ -5,8 +5,8 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading, Activity, Activties, ChartData } from './lib/types';
-import { convertToCSV, transformData } from './lib/util';
+import { SensorData, Payload, Reading, Activity, Activities, ChartData } from './lib/types';
+import { convertToCSV, mergeActivitySequence, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Svg, Line, Circle, Text as SVGText, TSpan } from 'react-native-svg';
@@ -20,11 +20,11 @@ function App(): JSX.Element {
 
   const [model, setModel] = useState('CNN');
   const [activity, setActivity] = useState('');
-  const [activities, setActivities] = useState<Activties>([]);
+  const [activities, setActivities] = useState<Activities>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const modelRef = useRef('CNN');
-  const activitiesRef = useRef<Activties>([]);
+  const activitiesRef = useRef<Activities>([]);
   const isLoadingRef = useRef(false);
 
   const [accelerometerData, setAccelerometerData] = useState<SensorData>([]);
@@ -359,14 +359,14 @@ const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetwe
 });
 
 interface ActivityTimelineProps {
-  activities: Activties;
+  activities: Activities;
 }
 
 const ActivityTimeline = ({ activities }: ActivityTimelineProps) => {
   const isDarkMode = useColorScheme() === 'dark';
 
-  // Reverse the activities so that the latest activity is at the top
-  activities = useMemo(() => [...activities].reverse(), [activities]);
+  // Preprocess activities to consolidate consecutive same activities & latest activity is at the top
+  activities = useMemo(() => mergeActivitySequence([...activities].reverse()), [activities]);
 
   // Calculate dynamic SVG height based on number of timepoints and distance between them
   const screenWidth = Dimensions.get('window').width;

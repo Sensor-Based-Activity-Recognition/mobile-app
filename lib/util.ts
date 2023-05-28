@@ -1,9 +1,9 @@
 import RNFS from "react-native-fs";
-import { Payload, Reading, SensorData } from './types';
+import { Activities, Payload, Reading, SensorData } from './types';
 import { Buffer } from 'buffer';
 import pako from 'pako';
 
-export function convertToCSV(payload: Payload): string {
+export const convertToCSV = (payload: Payload): string  => {
   // Define headers
   let csvString = 'timestamp,Accelerometer_x,Accelerometer_y,Accelerometer_z,Gyroscope_x,Gyroscope_y,Gyroscope_z,Magnetometer_x,Magnetometer_y,Magnetometer_z\n';
 
@@ -48,17 +48,30 @@ export function convertToCSV(payload: Payload): string {
   return csvString;
 }
 
-function convertToByteString(csvString: string): Uint8Array {
+const convertToByteString = (csvString: string): Uint8Array => {
   return new Buffer(csvString, 'utf-8');
 }
 
-function compressData(data: Uint8Array): Uint8Array {
+const compressData = (data: Uint8Array): Uint8Array => {
   return pako.gzip(data);
 }
 
-export function transformData(payload: Payload): Uint8Array {
+export const transformData = (payload: Payload): Uint8Array => {
   const csvString = convertToCSV(payload);
   const byteString = convertToByteString(csvString);
   const compressedData = compressData(byteString);
   return compressedData;
 }
+
+// Reduce activities to only include the first activity in a sequence of the same activity
+export const mergeActivitySequence = (activities: Activities) => {
+  const result = [];
+  let prevActivity = null;
+  for (const activity of activities) {
+    if (prevActivity == null || prevActivity.activity !== activity.activity) {
+      result.push(activity);
+      prevActivity = activity;
+    }
+  }
+  return result;
+};

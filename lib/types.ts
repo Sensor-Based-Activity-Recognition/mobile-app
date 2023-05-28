@@ -17,12 +17,4 @@ export type Activity = {
   }
 };
 
-export type Activties = Activity[];
-
-export type ChartDataPoint = {
-  x: number,
-  y: string,
-  confidence: number,
-};
-
-export type ChartData = ChartDataPoint[];
+export type Activities = Activity[];
