@@ -11,9 +11,10 @@ export type Payload = {
 export type Activity = {
   id: number,
   activity: string,
+  timestamp: number,
   probabilities: {
     [key: string]: number
   }
 };
 
-export type Activties = Activity[];
+export type Activities = Activity[];

@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
+import { SafeAreaView, StatusBar, StyleSheet, Button, Text, useColorScheme, View, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { accelerometer, gyroscope, magnetometer, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading, Activity, Activties } from './lib/types';
-import { convertToCSV, transformData } from './lib/util';
+import { SensorData, Payload, Reading, Activity, Activities } from './lib/types';
+import { convertToCSV, mergeActivitySequence, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { Svg, Line, Circle, Text as SVGText, TSpan } from 'react-native-svg';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -18,11 +20,11 @@ function App(): JSX.Element {
 
   const [model, setModel] = useState('CNN');
   const [activity, setActivity] = useState('');
-  const [activities, setActivities] = useState<Activties>([]);
+  const [activities, setActivities] = useState<Activities>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const modelRef = useRef('CNN');
-  const activitiesRef = useRef<Activties>([]);
+  const activitiesRef = useRef<Activities>([]);
   const isLoadingRef = useRef(false);
 
   const [accelerometerData, setAccelerometerData] = useState<SensorData>([]);
@@ -118,6 +120,7 @@ function App(): JSX.Element {
         id: nextActivityId,
         activity: highestActivity[0],
         probabilities: response["0"], // referring to window 0
+        timestamp: now,
       };
 
       // append the activity to the list of activities
@@ -216,8 +219,11 @@ function App(): JSX.Element {
   return (
     <SafeAreaView style={[backgroundStyle, styles.container]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={backgroundStyle.backgroundColor} />
+      <View style={styles.titleContainer}>
+        <Text style={[isDarkMode ? styles.lightTitle : styles.darkTitle]}>Activity Recognition</Text>
+      </View>
       <Picker
-        itemStyle={{ color: isDarkMode ? 'white' : 'black' }}
+        itemStyle={{ color: isDarkMode ? 'white' : 'black', height: 60 }}
         selectedValue={model}
         onValueChange={(value: string) => {
           modelRef.current = value;
@@ -227,18 +233,22 @@ function App(): JSX.Element {
         <Picker.Item label="CNN" value="CNN" />
         <Picker.Item label="HistGradientBoost" value="HGBC" />
       </Picker>
-      <View style={styles.sectionContainer}>
-        <Text style={[isDarkMode ? styles.lightTitle : styles.darkTitle]}>Activity Recognition</Text>
+      <View style={styles.titleContainer}>
         <Button title={isLoading ? "Stop recording" : "Start Recording"} onPress={toggleRecording} />
         {isLoading && (
-          <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
+            <ActivityIndicator size="small" color={isDarkMode ? Colors.light : Colors.dark} style={styles.loader} />
         )}
-        <Text style={[styles.activityText, { color: isDarkMode ? Colors.light : Colors.dark }]}>{activity}</Text>
-        <SensorDataDisplay sensorName="Accelerometer" sensorReading={latestDisplayAccelerometerData} />
-        <SensorDataDisplay sensorName="Gyroscope" sensorReading={latestDisplayGyroscopeData} />
-        <SensorDataDisplay sensorName="Magnetometer" sensorReading={latestDisplayMagnetometerData} />
-        <Button title="Share Sensor Data" onPress={shareSensorData}  disabled={isLoading} />
       </View>
+      <ScrollView>
+        <View style={styles.sectionContainer}>
+          <ActivityTimeline activities={activities} />
+          <Text style={[styles.activityText, { color: isDarkMode ? Colors.light : Colors.dark }]}>{activity}</Text>
+          <SensorDataDisplay sensorName="Accelerometer" sensorReading={latestDisplayAccelerometerData} />
+          <SensorDataDisplay sensorName="Gyroscope" sensorReading={latestDisplayGyroscopeData} />
+          <SensorDataDisplay sensorName="Magnetometer" sensorReading={latestDisplayMagnetometerData} />
+          <Button title="Share Sensor Data" onPress={shareSensorData}  disabled={isLoading} />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 
@@ -274,9 +284,128 @@ const SensorDataDisplay: React.FC<SensorDataDisplayProps> = ({ sensorName, senso
   );
 };
 
+interface ActivityTimelineEntryProps {
+  activity: Activity;
+  index: number;
+  isDarkMode: boolean;
+  distanceBetweenEntries: number;
+}
+
+const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetweenEntries }: ActivityTimelineEntryProps) => {
+  const date = new Date(activity.timestamp / 1000000);
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+
+  const getActivityIconName = (activity: string) => {
+    console.log('icon name', activity)
+    switch (activity) {
+      case 'Sitzen': return 'couch'
+      case 'Stehen': return 'male';
+      case 'Laufen': return 'walking';
+      case 'Rennen': return 'running';
+      case 'Treppenlaufen': return 'hiking';
+      case 'Velofahren': return 'biking';
+      default: return 'question';
+    }
+  };
+
+  return (
+    <React.Fragment key={activity.id}>
+      <SVGText
+        x="0"
+        y={55 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      >
+        {`${hours}:${minutes}:`}
+        <TSpan fontWeight="bold">{seconds}</TSpan>
+      </SVGText>
+      <Circle
+        cx="65"
+        cy={50 + index * distanceBetweenEntries}
+        r="8"
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      />
+      <FontAwesome5
+        name={getActivityIconName(activity.activity)}
+        size={30} // size of the icon
+        color={isDarkMode ? Colors.light : Colors.dark}
+        style={{
+          position: 'absolute',
+          left: 80,
+          top: 35 + index * distanceBetweenEntries
+        }}
+      />
+      <SVGText
+        x="130"
+        y={45 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+        fontSize="20"
+      >
+        {activity.activity}
+      </SVGText>
+      <SVGText
+        x="130"
+        y={65 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+        fontSize="15"
+      >
+        {(activity.probabilities[activity.activity] * 100).toFixed(1)}%
+      </SVGText>
+    </React.Fragment>
+  );
+});
+
+interface ActivityTimelineProps {
+  activities: Activities;
+}
+
+const ActivityTimeline = ({ activities }: ActivityTimelineProps) => {
+  const isDarkMode = useColorScheme() === 'dark';
+
+  // Preprocess activities to consolidate consecutive same activities & latest activity is at the top
+  activities = useMemo(() => mergeActivitySequence([...activities].reverse()), [activities]);
+
+  // Calculate dynamic SVG height based on number of timepoints and distance between them
+  const screenWidth = Dimensions.get('window').width;
+  const distanceBetweenEntries = 100; // Adjust this as needed
+  const svgHeight = useMemo(() => activities.length * distanceBetweenEntries, [activities, distanceBetweenEntries]);
+  const svgWidth = screenWidth * 0.8;
+
+  return (
+    <ScrollView>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Svg height={svgHeight} width={svgWidth}>
+          <Line
+            x1="65"
+            y1="50"
+            x2="65"
+            y2={svgHeight - 50}
+            stroke={isDarkMode ? Colors.light : Colors.dark}
+            strokeWidth="2"
+          />
+          {activities.map((activity, index) => (
+            <ActivityTimelineEntry
+              key={activity.id}
+              activity={activity}
+              index={index}
+              isDarkMode={isDarkMode}
+              distanceBetweenEntries={distanceBetweenEntries}
+            />
+          ))}
+        </Svg>
+      </View>
+    </ScrollView>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  titleContainer: {
+    marginTop: 4,
+    alignItems: 'center',
   },
   sectionContainer: {
     marginTop: 0,
