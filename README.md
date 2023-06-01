@@ -80,3 +80,9 @@ Android:
 npm run build-android
 ```
 The generated APK file can be found at: `.\android\app\build\outputs\apk\release\app-release.apk`
+
+**Install the Apk file on a device**
+```bash
+adb install -r .\android\app\build\outputs\apk\release\app-release.apk
+```
+You can leave out the `-r` flag if you want to install the app for the first time.
