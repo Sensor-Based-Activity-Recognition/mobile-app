@@ -70,3 +70,13 @@ iOS:
 Android:
 - `adb devices`
 - `npx react-native run-android --deviceId adb-R5CR202SXQE-fMiGjJ._adb-tls-connect._tcp.`
+
+# Realeasing the App
+
+## Android
+
+**Build the Apk file**
+```bash
+npm run build-android
+```
+The generated APK file can be found at: `.\android\app\build\outputs\apk\release\app-release.apk`
