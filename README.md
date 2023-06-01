@@ -35,7 +35,7 @@ Create ENV Variables in .bashrc or .zshrc (update paths to your own):
 **Run instructions for Android:**
 
 - Have an Android emulator running (quickest way to get started), or a device connected.
-- `npx react-native run-android`
+- `npm run android`
 
 ### iOS
 
