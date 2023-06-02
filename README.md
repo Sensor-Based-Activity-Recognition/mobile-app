@@ -35,7 +35,7 @@ Create ENV Variables in .bashrc or .zshrc (update paths to your own):
 **Run instructions for Android:**
 
 - Have an Android emulator running (quickest way to get started), or a device connected.
-- `npx react-native run-android`
+- `npm run android`
 
 ### iOS
 
@@ -70,3 +70,19 @@ iOS:
 Android:
 - `adb devices`
 - `npx react-native run-android --deviceId adb-R5CR202SXQE-fMiGjJ._adb-tls-connect._tcp.`
+
+# Realeasing the App
+
+## Android
+
+**Build the Apk file**
+```bash
+npm run build-android
+```
+The generated APK file can be found at: `.\android\app\build\outputs\apk\release\app-release.apk`
+
+**Install the Apk file on a device**
+```bash
+adb install -r .\android\app\build\outputs\apk\release\app-release.apk
+```
+You can leave out the `-r` flag if you want to install the app for the first time.
