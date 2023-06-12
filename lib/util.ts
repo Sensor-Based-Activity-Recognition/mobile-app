@@ -1,8 +1,12 @@
-import RNFS from "react-native-fs";
-import { Activities, Activity, Payload, Predictions, Reading, SensorData, Window } from './types';
+import { Activities, Activity, Payload, Reading } from './types';
 import { Buffer } from 'buffer';
 import pako from 'pako';
 
+/**
+ * Converts payload data to a CSV string format.
+ * @param payload - The payload containing sensor data.
+ * @returns A CSV string representation of the payload data.
+ */
 export const convertToCSV = (payload: Payload): string  => {
   // Define headers
   let csvString = 'timestamp,Accelerometer_x,Accelerometer_y,Accelerometer_z,Gyroscope_x,Gyroscope_y,Gyroscope_z,Magnetometer_x,Magnetometer_y,Magnetometer_z\n';
@@ -48,14 +52,29 @@ export const convertToCSV = (payload: Payload): string  => {
   return csvString;
 }
 
+/**
+ * Converts a CSV string to a Uint8Array byte string.
+ * @param csvString - The CSV string to convert.
+ * @returns A Uint8Array byte string representation of the CSV string.
+ */
 const convertToByteString = (csvString: string): Uint8Array => {
   return new Buffer(csvString, 'utf-8');
 }
 
+/**
+ * Compresses data using gzip compression algorithm.
+ * @param data - The data to compress as a Uint8Array.
+ * @returns The compressed data as a Uint8Array.
+ */
 const compressData = (data: Uint8Array): Uint8Array => {
   return pako.gzip(data);
 }
 
+/**
+ * Transforms payload data into a compressed Uint8Array representation.
+ * @param payload - The payload containing sensor data.
+ * @returns A compressed Uint8Array representation of the transformed data.
+ */
 export const transformData = (payload: Payload): Uint8Array => {
   const csvString = convertToCSV(payload);
   const byteString = convertToByteString(csvString);
@@ -63,17 +82,21 @@ export const transformData = (payload: Payload): Uint8Array => {
   return compressedData;
 }
 
-// Reduce activities to only include the first activity in a sequence of the same activity
-export const mergeActivitySequence = (activities: Activities) => {
+/**
+ * Reduces activities to only include the first activity in a sequence of the same activity.
+ * @param activities - An array of activities.
+ * @returns An array of activities with only the first activity in a sequence of the same activity.
+ */
+export const mergeActivitySequence = (activities: Activities): Activity[] => {
   let result: Activity[] = [];
   let lastActivity: Activity | null = null;
 
   activities.forEach((activity) => {
     if (!lastActivity || lastActivity.activity !== activity.activity) {
-      lastActivity = { ...activity };  // make a copy and use it as lastActivity
+      lastActivity = { ...activity };  // make a copy
       result.push(lastActivity);
     } else {
-      // if the current activity is the same as the last one, update its endTime
+      // if the current activity is the same as the last one, update lastActivity's endTime
       lastActivity.endTime = activity.endTime;
     }
   });

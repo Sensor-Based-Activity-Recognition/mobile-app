@@ -163,7 +163,7 @@ function App(): JSX.Element {
       const activity: Activity = {
         id: nextActivityId,
         activity: mostCommonActivity[0],
-        probabilities: averageProbabilities, // Average probability score of all activities
+        probabilities: averageProbabilities,
         startTime: Math.min(...timestamps),
         endTime: now,
       };
