@@ -1,5 +1,5 @@
 import RNFS from "react-native-fs";
-import { Activities, Payload, Reading, SensorData } from './types';
+import { Activities, Payload, Predictions, Reading, SensorData, Window } from './types';
 import { Buffer } from 'buffer';
 import pako from 'pako';
 

@@ -112,35 +112,58 @@ function App(): JSX.Element {
       const transformedData: Uint8Array = transformData(sensorData);
       const predictions: Predictions = await sendDataToServer(transformedData);
 
-      console.log("Response from server:", predictions);
-
       // get the most common activity across all windows
       let activityFrequency: {[key: string]: number} = {};
-      let activityProbabilities: {[key: string]: number} = {};
+      let sumOfProbabilities: {[key: string]: number} = {};
       Object.values(predictions).forEach((window: Window) => {
         const predictionForActivities: [string, number][] = Object.entries(window);
         const highestActivity: [string, number] = predictionForActivities.reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
-        console.log("Highest activity is ", highestActivity, "in window", window.key)
-        if (activityFrequency[highestActivity[0]]) {
-          activityFrequency[highestActivity[0]] += 1;
-          activityProbabilities[highestActivity[0]] += highestActivity[1];
+        
+        // sum probabilities and counts for averaging later
+        // Only for the highest activity in each window
+        const [activity, probability] = highestActivity;
+        if (activity in sumOfProbabilities) {
+          sumOfProbabilities[activity] += probability;
+          activityFrequency[activity] += 1;
         } else {
-          activityFrequency[highestActivity[0]] = 1;
-          activityProbabilities[highestActivity[0]] = highestActivity[1];
+          sumOfProbabilities[activity] = probability;
+          activityFrequency[activity] = 1;
         }
       });
+      console.log("activityFrequency", activityFrequency);
 
-      const mostCommonActivity: [string, number] = Object.entries(activityFrequency).reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
-      console.log("mostCommonActivity", mostCommonActivity);
+      // calculate the average probabilities
+      let averageProbabilities: {[key: string]: number} = {};
+      for (let activity in sumOfProbabilities) {
+        averageProbabilities[activity] = sumOfProbabilities[activity] / activityFrequency[activity];
+      };
+      console.log("averageProbabilities", averageProbabilities)
 
-      // Calculating average probabilities for the most common activity
-      let averageProbability = activityProbabilities[mostCommonActivity[0]] / activityFrequency[mostCommonActivity[0]];
+      // determine the most common activity, considering the most probable one first
+      const mostCommonActivity: [string, number] = Object.entries(activityFrequency).reduce((maxActivity, currentActivity) => {
+        const [maxActivityName, maxFrequency] = maxActivity;
+        const [currentActivityName, currentFrequency] = currentActivity;
 
+        if (currentFrequency > maxFrequency) {
+          // If the current activity is more frequent, choose it
+          return currentActivity; 
+        } else if (currentFrequency === maxFrequency) {
+          // If both activities are equally frequent, choose the one with higher average probability
+          console.log('Activities equally frequent: Considering probability', currentActivity, maxActivityName, averageProbabilities[currentActivityName], averageProbabilities[maxActivityName])
+          return (averageProbabilities[currentActivityName] > averageProbabilities[maxActivityName]) ? currentActivity : maxActivity;
+        } else {
+           // If the current activity is less frequent, keep the maxActivity
+          return maxActivity;
+        }
+      });
+      console.log("mostCommonActivity", mostCommonActivity)
+
+      // create the activity object for the timeline
       const nextActivityId: number = activitiesRef.current.length + 1;
       const activity: Activity = {
         id: nextActivityId,
         activity: mostCommonActivity[0],
-        probabilities: {[mostCommonActivity[0]]: averageProbability}, // Average probability score of the most common activity
+        probabilities: averageProbabilities, // Average probability score of all activities
         timestamp: now,
       };
 
@@ -323,7 +346,6 @@ const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetwe
   const seconds = date.getSeconds().toString().padStart(2, '0');
 
   const getActivityIconName = (activity: string) => {
-    console.log('icon name', activity)
     switch (activity) {
       case 'Sitzen': return 'couch'
       case 'Stehen': return 'male';
