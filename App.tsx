@@ -6,7 +6,7 @@ import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
 import { SensorData, Payload, Reading, Activity, Activities, Predictions, Window } from './lib/types';
-import { convertToCSV, mergeActivitySequence, transformData } from './lib/util';
+import { calculateAverageProbabilities, computeActivityFrequencyAndSumOfProbabilities, convertToCSV, determineMostCommonActivity, mergeActivitySequence, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Svg, Line, Circle, Text as SVGText, TSpan } from 'react-native-svg';
@@ -112,51 +112,14 @@ function App(): JSX.Element {
       const transformedData: Uint8Array = transformData(sensorData);
       const predictions: Predictions = await sendDataToServer(transformedData);
 
-      // get the most common activity across all windows
-      let activityFrequency: {[key: string]: number} = {};
-      let sumOfProbabilities: {[key: string]: number} = {};
-      Object.values(predictions).forEach((window: Window) => {
-        const predictionForActivities: [string, number][] = Object.entries(window);
-        const highestActivity: [string, number] = predictionForActivities.reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
-        
-        // sum probabilities and counts for averaging later
-        // Only for the highest activity in each window
-        const [activity, probability] = highestActivity;
-        if (activity in sumOfProbabilities) {
-          sumOfProbabilities[activity] += probability;
-          activityFrequency[activity] += 1;
-        } else {
-          sumOfProbabilities[activity] = probability;
-          activityFrequency[activity] = 1;
-        }
-      });
+      const { activityFrequency, sumOfProbabilities } = computeActivityFrequencyAndSumOfProbabilities(predictions);
       console.log("activityFrequency", activityFrequency);
 
-      // calculate the average probabilities
-      let averageProbabilities: {[key: string]: number} = {};
-      for (let activity in sumOfProbabilities) {
-        averageProbabilities[activity] = sumOfProbabilities[activity] / activityFrequency[activity];
-      };
-      console.log("averageProbabilities", averageProbabilities)
+      const averageProbabilities = calculateAverageProbabilities(sumOfProbabilities, activityFrequency);
+      console.log("averageProbabilities", averageProbabilities);
 
-      // determine the most common activity, considering the most probable one first
-      const mostCommonActivity: [string, number] = Object.entries(activityFrequency).reduce((maxActivity, currentActivity) => {
-        const [maxActivityName, maxFrequency] = maxActivity;
-        const [currentActivityName, currentFrequency] = currentActivity;
-
-        if (currentFrequency > maxFrequency) {
-          // If the current activity is more frequent, choose it
-          return currentActivity; 
-        } else if (currentFrequency === maxFrequency) {
-          // If both activities are equally frequent, choose the one with higher average probability
-          console.log('Activities equally frequent: Considering probability', currentActivity, maxActivityName, averageProbabilities[currentActivityName], averageProbabilities[maxActivityName])
-          return (averageProbabilities[currentActivityName] > averageProbabilities[maxActivityName]) ? currentActivity : maxActivity;
-        } else {
-           // If the current activity is less frequent, keep the maxActivity
-          return maxActivity;
-        }
-      });
-      console.log("mostCommonActivity", mostCommonActivity)
+      const mostCommonActivity = determineMostCommonActivity(activityFrequency, averageProbabilities);
+      console.log("mostCommonActivity", mostCommonActivity);
 
       // create the activity object for the timeline
       const nextActivityId: number = activitiesRef.current.length + 1;
@@ -165,9 +128,8 @@ function App(): JSX.Element {
         activity: mostCommonActivity[0],
         probabilities: averageProbabilities,
         startTime: Math.min(...timestamps),
-        endTime: now,
+        endTime: Math.max(...timestamps),
       };
-
       console.log("Activity defined as", activity)
 
       // append the activity to the list of activities

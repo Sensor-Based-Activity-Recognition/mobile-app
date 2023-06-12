@@ -1,4 +1,4 @@
-import { Activities, Activity, Payload, Reading } from './types';
+import { Activities, Activity, Payload, Reading, Window } from './types';
 import { Buffer } from 'buffer';
 import pako from 'pako';
 
@@ -102,4 +102,48 @@ export const mergeActivitySequence = (activities: Activities): Activity[] => {
   });
 
   return result;
+};
+
+export const computeActivityFrequencyAndSumOfProbabilities = (predictions: {[key: string]: Window}) => {
+  let activityFrequency: {[key: string]: number} = {};
+  let sumOfProbabilities: {[key: string]: number} = {};
+
+  Object.values(predictions).forEach((window: Window) => {
+    const predictionForActivities: [string, number][] = Object.entries(window);
+    const highestActivity: [string, number] = predictionForActivities.reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
+
+    const [activity, probability] = highestActivity;
+    if (activity in sumOfProbabilities) {
+      sumOfProbabilities[activity] += probability;
+      activityFrequency[activity] += 1;
+    } else {
+      sumOfProbabilities[activity] = probability;
+      activityFrequency[activity] = 1;
+    }
+  });
+
+  return { activityFrequency, sumOfProbabilities };
+};
+
+export const calculateAverageProbabilities = (sumOfProbabilities: {[key: string]: number}, activityFrequency: {[key: string]: number}) => {
+  let averageProbabilities: {[key: string]: number} = {};
+  for (let activity in sumOfProbabilities) {
+    averageProbabilities[activity] = sumOfProbabilities[activity] / activityFrequency[activity];
+  }
+  return averageProbabilities;
+};
+
+export const determineMostCommonActivity = (activityFrequency: {[key: string]: number}, averageProbabilities: {[key: string]: number}) => {
+  return Object.entries(activityFrequency).reduce((maxActivity, currentActivity) => {
+    const [maxActivityName, maxFrequency] = maxActivity;
+    const [currentActivityName, currentFrequency] = currentActivity;
+
+    if (currentFrequency > maxFrequency) {
+      return currentActivity;
+    } else if (currentFrequency === maxFrequency) {
+      return (averageProbabilities[currentActivityName] > averageProbabilities[maxActivityName]) ? currentActivity : maxActivity;
+    } else {
+      return maxActivity;
+    }
+  });
 };
