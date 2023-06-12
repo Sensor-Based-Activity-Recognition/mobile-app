@@ -8,6 +8,14 @@ export type Payload = {
   magnetometer: SensorData,
 };
 
+export type Predictions = {
+  [windowId: string]: Window
+};
+
+export type Window = {
+  [activity: string]: number
+};
+
 export type Activity = {
   id: number,
   activity: string,

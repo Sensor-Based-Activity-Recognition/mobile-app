@@ -5,7 +5,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading, Activity, Activities } from './lib/types';
+import { SensorData, Payload, Reading, Activity, Activities, Predictions, Window } from './lib/types';
 import { convertToCSV, mergeActivitySequence, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
@@ -38,7 +38,7 @@ function App(): JSX.Element {
   const gyroscopeDataRef = useRef<SensorData>([]);
   const magnetometerDataRef = useRef<SensorData>([]);
 
-  const CLASSIFICATION_INTERVAL = 30; // 30 seconds interval
+  const CLASSIFICATION_INTERVAL = 25; // in seconds
 
   useEffect(() => {
     if(isLoading) {
@@ -110,27 +110,47 @@ function App(): JSX.Element {
 
       // transform the data & request the prediction
       const transformedData: Uint8Array = transformData(sensorData);
-      const response: any = await sendDataToServer(transformedData);
+      const predictions: Predictions = await sendDataToServer(transformedData);
 
-      console.log("Response from server:", response);
+      console.log("Response from server:", predictions);
 
-      // get the activity with the highest probability
-      const activities: [string, number][] = Object.entries(response["0"]);
-      const highestActivity: [string, number] = activities.reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
-      console.log("highestActivity", highestActivity);
+      // get the most common activity across all windows
+      let activityFrequency: {[key: string]: number} = {};
+      let activityProbabilities: {[key: string]: number} = {};
+      Object.values(predictions).forEach((window: Window) => {
+        const predictionForActivities: [string, number][] = Object.entries(window);
+        const highestActivity: [string, number] = predictionForActivities.reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
+        console.log("Highest activity is ", highestActivity, "in window", window.key)
+        if (activityFrequency[highestActivity[0]]) {
+          activityFrequency[highestActivity[0]] += 1;
+          activityProbabilities[highestActivity[0]] += highestActivity[1];
+        } else {
+          activityFrequency[highestActivity[0]] = 1;
+          activityProbabilities[highestActivity[0]] = highestActivity[1];
+        }
+      });
+
+      const mostCommonActivity: [string, number] = Object.entries(activityFrequency).reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
+      console.log("mostCommonActivity", mostCommonActivity);
+
+      // Calculating average probabilities for the most common activity
+      let averageProbability = activityProbabilities[mostCommonActivity[0]] / activityFrequency[mostCommonActivity[0]];
 
       const nextActivityId: number = activitiesRef.current.length + 1;
       const activity: Activity = {
         id: nextActivityId,
-        activity: highestActivity[0],
-        probabilities: response["0"], // referring to window 0
+        activity: mostCommonActivity[0],
+        probabilities: {[mostCommonActivity[0]]: averageProbability}, // Average probability score of the most common activity
         timestamp: now,
       };
+
+      console.log("Activity defined as", activity)
 
       // append the activity to the list of activities
       activitiesRef.current = [...activitiesRef.current, activity];
       setActivities(activitiesRef.current);
-      // set activity to current length and latest activity
+
+      // set activity to current length and most common activity
       setActivity(activitiesRef.current.length.toString() + " " + activity.activity);
 
       deleteDataOlderThan(CLASSIFICATION_INTERVAL);
