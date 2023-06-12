@@ -104,6 +104,11 @@ export const mergeActivitySequence = (activities: Activities): Activity[] => {
   return result;
 };
 
+/**
+ * Computes the frequency of each activity and the sum of probabilities for each activity from the predictions.
+ * @param predictions - The predictions containing windowed activity data.
+ * @returns An object with the activity frequency and sum of probabilities for each activity.
+ */
 export const computeActivityFrequencyAndSumOfProbabilities = (predictions: {[key: string]: Window}) => {
   let activityFrequency: {[key: string]: number} = {};
   let sumOfProbabilities: {[key: string]: number} = {};
@@ -125,6 +130,12 @@ export const computeActivityFrequencyAndSumOfProbabilities = (predictions: {[key
   return { activityFrequency, sumOfProbabilities };
 };
 
+/**
+ * Calculates the average probabilities for each activity based on the sum of probabilities and activity frequency.
+ * @param sumOfProbabilities - The sum of probabilities for each activity.
+ * @param activityFrequency - The frequency of each activity.
+ * @returns An object with the average probabilities for each activity.
+ */
 export const calculateAverageProbabilities = (sumOfProbabilities: {[key: string]: number}, activityFrequency: {[key: string]: number}) => {
   let averageProbabilities: {[key: string]: number} = {};
   for (let activity in sumOfProbabilities) {
@@ -133,6 +144,12 @@ export const calculateAverageProbabilities = (sumOfProbabilities: {[key: string]
   return averageProbabilities;
 };
 
+/**
+ * Determines the most common activity based on activity frequency and average probabilities.
+ * @param activityFrequency - The frequency of each activity.
+ * @param averageProbabilities - The average probabilities for each activity.
+ * @returns The most common activity as a [string, number] tuple, where the first element is the activity name and the second element is the frequency.
+ */
 export const determineMostCommonActivity = (activityFrequency: {[key: string]: number}, averageProbabilities: {[key: string]: number}) => {
   return Object.entries(activityFrequency).reduce((maxActivity, currentActivity) => {
     const [maxActivityName, maxFrequency] = maxActivity;
