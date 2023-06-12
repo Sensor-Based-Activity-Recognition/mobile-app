@@ -164,7 +164,8 @@ function App(): JSX.Element {
         id: nextActivityId,
         activity: mostCommonActivity[0],
         probabilities: averageProbabilities, // Average probability score of all activities
-        timestamp: now,
+        startTime: Math.min(...timestamps),
+        endTime: now,
       };
 
       console.log("Activity defined as", activity)
@@ -340,10 +341,15 @@ interface ActivityTimelineEntryProps {
 }
 
 const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetweenEntries }: ActivityTimelineEntryProps) => {
-  const date = new Date(activity.timestamp / 1000000);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
+  const startDate = new Date(activity.startTime / 1000000);
+  const startHours = startDate.getHours().toString().padStart(2, '0');
+  const startMinutes = startDate.getMinutes().toString().padStart(2, '0');
+  const startSeconds = startDate.getSeconds().toString().padStart(2, '0');
+
+  const endDate = new Date(activity.endTime / 1000000);
+  const endHours = endDate.getHours().toString().padStart(2, '0');
+  const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+  const endSeconds = endDate.getSeconds().toString().padStart(2, '0');
 
   const getActivityIconName = (activity: string) => {
     switch (activity) {
@@ -361,11 +367,26 @@ const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetwe
     <React.Fragment key={activity.id}>
       <SVGText
         x="0"
+        y={55 - 10 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      >
+        {`${startHours}:${startMinutes}:`}
+        <TSpan fontWeight="bold">{startSeconds}</TSpan>
+      </SVGText>
+      <SVGText
+        x="0"
         y={55 + index * distanceBetweenEntries}
         fill={isDarkMode ? Colors.light : Colors.dark}
       >
-        {`${hours}:${minutes}:`}
-        <TSpan fontWeight="bold">{seconds}</TSpan>
+        -
+      </SVGText>
+      <SVGText
+        x="0"
+        y={55 + 10 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      >
+        {`${endHours}:${endMinutes}:`}
+        <TSpan fontWeight="bold">{endSeconds}</TSpan>
       </SVGText>
       <Circle
         cx="65"
@@ -411,7 +432,7 @@ const ActivityTimeline = ({ activities }: ActivityTimelineProps) => {
   const isDarkMode = useColorScheme() === 'dark';
 
   // Preprocess activities to consolidate consecutive same activities & latest activity is at the top
-  activities = useMemo(() => mergeActivitySequence([...activities].reverse()), [activities]);
+  activities = useMemo(() => mergeActivitySequence([...activities]), [activities]);
 
   // Calculate dynamic SVG height based on number of timepoints and distance between them
   const screenWidth = Dimensions.get('window').width;

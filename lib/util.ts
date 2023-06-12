@@ -1,5 +1,5 @@
 import RNFS from "react-native-fs";
-import { Activities, Payload, Predictions, Reading, SensorData, Window } from './types';
+import { Activities, Activity, Payload, Predictions, Reading, SensorData, Window } from './types';
 import { Buffer } from 'buffer';
 import pako from 'pako';
 
@@ -65,13 +65,18 @@ export const transformData = (payload: Payload): Uint8Array => {
 
 // Reduce activities to only include the first activity in a sequence of the same activity
 export const mergeActivitySequence = (activities: Activities) => {
-  const result = [];
-  let prevActivity = null;
-  for (const activity of activities) {
-    if (prevActivity == null || prevActivity.activity !== activity.activity) {
-      result.push(activity);
-      prevActivity = activity;
+  let result: Activity[] = [];
+  let lastActivity: Activity | null = null;
+
+  activities.forEach((activity) => {
+    if (!lastActivity || lastActivity.activity !== activity.activity) {
+      lastActivity = { ...activity };  // make a copy and use it as lastActivity
+      result.push(lastActivity);
+    } else {
+      // if the current activity is the same as the last one, update its endTime
+      lastActivity.endTime = activity.endTime;
     }
-  }
+  });
+
   return result;
 };

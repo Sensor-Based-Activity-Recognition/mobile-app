@@ -19,7 +19,8 @@ export type Window = {
 export type Activity = {
   id: number,
   activity: string,
-  timestamp: number,
+  startTime: number,
+  endTime: number,
   probabilities: {
     [key: string]: number
   }
