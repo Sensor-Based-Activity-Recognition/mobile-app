@@ -38,6 +38,8 @@ function App(): JSX.Element {
   const gyroscopeDataRef = useRef<SensorData>([]);
   const magnetometerDataRef = useRef<SensorData>([]);
 
+  const CLASSIFICATION_INTERVAL = 30; // 30 seconds interval
+
   useEffect(() => {
     if(isLoading) {
       setUpdateIntervalForType(SensorTypes.accelerometer, 20); // 100 Hz (20 ms)
@@ -86,11 +88,11 @@ function App(): JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
-
   useEffect(() => {
     const classifyAndAppendActivity = async () => {
       const now: number = new Date().getTime() * 1_000_000;
-      const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - 6_000_000_000;
+      // 20% overlap to make sure we have enough data
+      const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - (CLASSIFICATION_INTERVAL * 1.2) * 1_000_000_000;
       const sensorData: Payload = {
         accelerometer: accelerometerDataRef.current.filter(keepLastSeconds),
         gyroscope: gyroscopeDataRef.current.filter(keepLastSeconds),
@@ -101,7 +103,7 @@ function App(): JSX.Element {
       const timestamps: number[] = sensorData.accelerometer.map((reading) => reading.timestamp);
       const deltaSeconds: number = (Math.max(...timestamps) - Math.min(...timestamps)) / 1_000_000_000;
       console.log("Number of seconds of data", deltaSeconds);
-      if (deltaSeconds < 5) {
+      if (deltaSeconds < CLASSIFICATION_INTERVAL) {
         console.log("Not enough data");
         return;
       }
@@ -109,6 +111,8 @@ function App(): JSX.Element {
       // transform the data & request the prediction
       const transformedData: Uint8Array = transformData(sensorData);
       const response: any = await sendDataToServer(transformedData);
+
+      console.log("Response from server:", response);
 
       // get the activity with the highest probability
       const activities: [string, number][] = Object.entries(response["0"]);
@@ -129,18 +133,19 @@ function App(): JSX.Element {
       // set activity to current length and latest activity
       setActivity(activitiesRef.current.length.toString() + " " + activity.activity);
 
-      deleteDataOlderThan(5);
+      deleteDataOlderThan(CLASSIFICATION_INTERVAL);
     };
     const interval = setInterval(() => {
       if (isLoadingRef.current) {
         classifyAndAppendActivity();
       }
-    }, 5_000);
+    }, CLASSIFICATION_INTERVAL * 1000);
 
     return () => clearInterval(interval);
   }, []);
 
   const deleteDataOlderThan = (seconds: number = 5) => {
+    console.log('deleting data older than', seconds)
     const now = new Date().getTime() * 1_000_000;
     const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - seconds * 1_000_000_000;
     accelerometerDataRef.current = accelerometerDataRef.current.filter(keepLastSeconds);
