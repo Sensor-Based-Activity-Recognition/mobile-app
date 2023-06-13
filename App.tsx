@@ -5,8 +5,8 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Share from 'react-native-share';
 import RNFS from "react-native-fs";
 import axios from 'axios';
-import { SensorData, Payload, Reading, Activity, Activities } from './lib/types';
-import { convertToCSV, mergeActivitySequence, transformData } from './lib/util';
+import { SensorData, Payload, Reading, Activity, Activities, Predictions, Window } from './lib/types';
+import { calculateAverageProbabilities, computeActivityFrequencyAndSumOfProbabilities, convertToCSV, determineMostCommonActivity, mergeActivitySequence, transformData } from './lib/util';
 import { Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Svg, Line, Circle, Text as SVGText, TSpan } from 'react-native-svg';
@@ -37,6 +37,8 @@ function App(): JSX.Element {
   const accelerometerDataRef = useRef<SensorData>([]);
   const gyroscopeDataRef = useRef<SensorData>([]);
   const magnetometerDataRef = useRef<SensorData>([]);
+
+  const CLASSIFICATION_INTERVAL = 25; // in seconds
 
   useEffect(() => {
     if(isLoading) {
@@ -86,11 +88,11 @@ function App(): JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
-
   useEffect(() => {
     const classifyAndAppendActivity = async () => {
       const now: number = new Date().getTime() * 1_000_000;
-      const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - 6_000_000_000;
+      // 20% overlap to make sure we have enough data
+      const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - (CLASSIFICATION_INTERVAL * 1.2) * 1_000_000_000;
       const sensorData: Payload = {
         accelerometer: accelerometerDataRef.current.filter(keepLastSeconds),
         gyroscope: gyroscopeDataRef.current.filter(keepLastSeconds),
@@ -101,46 +103,55 @@ function App(): JSX.Element {
       const timestamps: number[] = sensorData.accelerometer.map((reading) => reading.timestamp);
       const deltaSeconds: number = (Math.max(...timestamps) - Math.min(...timestamps)) / 1_000_000_000;
       console.log("Number of seconds of data", deltaSeconds);
-      if (deltaSeconds < 5) {
+      if (deltaSeconds < CLASSIFICATION_INTERVAL) {
         console.log("Not enough data");
         return;
       }
 
       // transform the data & request the prediction
       const transformedData: Uint8Array = transformData(sensorData);
-      const response: any = await sendDataToServer(transformedData);
+      const predictions: Predictions = await sendDataToServer(transformedData);
 
-      // get the activity with the highest probability
-      const activities: [string, number][] = Object.entries(response["0"]);
-      const highestActivity: [string, number] = activities.reduce((maxActivity, currentActivity) => (currentActivity[1] > maxActivity[1]) ? currentActivity : maxActivity);
-      console.log("highestActivity", highestActivity);
+      const { activityFrequency, sumOfProbabilities } = computeActivityFrequencyAndSumOfProbabilities(predictions);
+      console.log("activityFrequency", activityFrequency);
 
+      const averageProbabilities = calculateAverageProbabilities(sumOfProbabilities, activityFrequency);
+      console.log("averageProbabilities", averageProbabilities);
+
+      const mostCommonActivity = determineMostCommonActivity(activityFrequency, averageProbabilities);
+      console.log("mostCommonActivity", mostCommonActivity);
+
+      // create the activity object for the timeline
       const nextActivityId: number = activitiesRef.current.length + 1;
       const activity: Activity = {
         id: nextActivityId,
-        activity: highestActivity[0],
-        probabilities: response["0"], // referring to window 0
-        timestamp: now,
+        activity: mostCommonActivity[0],
+        probabilities: averageProbabilities,
+        startTime: Math.min(...timestamps),
+        endTime: Math.max(...timestamps),
       };
+      console.log("Activity defined as", activity)
 
       // append the activity to the list of activities
       activitiesRef.current = [...activitiesRef.current, activity];
       setActivities(activitiesRef.current);
-      // set activity to current length and latest activity
+
+      // set activity to current length and most common activity
       setActivity(activitiesRef.current.length.toString() + " " + activity.activity);
 
-      deleteDataOlderThan(5);
+      deleteDataOlderThan(CLASSIFICATION_INTERVAL);
     };
     const interval = setInterval(() => {
       if (isLoadingRef.current) {
         classifyAndAppendActivity();
       }
-    }, 5_000);
+    }, CLASSIFICATION_INTERVAL * 1000);
 
     return () => clearInterval(interval);
   }, []);
 
   const deleteDataOlderThan = (seconds: number = 5) => {
+    console.log('deleting data older than', seconds)
     const now = new Date().getTime() * 1_000_000;
     const keepLastSeconds = (reading: Reading): boolean => reading.timestamp > now - seconds * 1_000_000_000;
     accelerometerDataRef.current = accelerometerDataRef.current.filter(keepLastSeconds);
@@ -292,13 +303,17 @@ interface ActivityTimelineEntryProps {
 }
 
 const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetweenEntries }: ActivityTimelineEntryProps) => {
-  const date = new Date(activity.timestamp / 1000000);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
+  const startDate = new Date(activity.startTime / 1000000);
+  const startHours = startDate.getHours().toString().padStart(2, '0');
+  const startMinutes = startDate.getMinutes().toString().padStart(2, '0');
+  const startSeconds = startDate.getSeconds().toString().padStart(2, '0');
+
+  const endDate = new Date(activity.endTime / 1000000);
+  const endHours = endDate.getHours().toString().padStart(2, '0');
+  const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+  const endSeconds = endDate.getSeconds().toString().padStart(2, '0');
 
   const getActivityIconName = (activity: string) => {
-    console.log('icon name', activity)
     switch (activity) {
       case 'Sitzen': return 'couch'
       case 'Stehen': return 'male';
@@ -314,11 +329,26 @@ const ActivityTimelineEntry = memo(({ activity, index, isDarkMode, distanceBetwe
     <React.Fragment key={activity.id}>
       <SVGText
         x="0"
+        y={55 - 10 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      >
+        {`${startHours}:${startMinutes}:`}
+        <TSpan fontWeight="bold">{startSeconds}</TSpan>
+      </SVGText>
+      <SVGText
+        x="0"
         y={55 + index * distanceBetweenEntries}
         fill={isDarkMode ? Colors.light : Colors.dark}
       >
-        {`${hours}:${minutes}:`}
-        <TSpan fontWeight="bold">{seconds}</TSpan>
+        -
+      </SVGText>
+      <SVGText
+        x="0"
+        y={55 + 10 + index * distanceBetweenEntries}
+        fill={isDarkMode ? Colors.light : Colors.dark}
+      >
+        {`${endHours}:${endMinutes}:`}
+        <TSpan fontWeight="bold">{endSeconds}</TSpan>
       </SVGText>
       <Circle
         cx="65"
@@ -364,7 +394,7 @@ const ActivityTimeline = ({ activities }: ActivityTimelineProps) => {
   const isDarkMode = useColorScheme() === 'dark';
 
   // Preprocess activities to consolidate consecutive same activities & latest activity is at the top
-  activities = useMemo(() => mergeActivitySequence([...activities].reverse()), [activities]);
+  activities = useMemo(() => mergeActivitySequence([...activities]), [activities]);
 
   // Calculate dynamic SVG height based on number of timepoints and distance between them
   const screenWidth = Dimensions.get('window').width;

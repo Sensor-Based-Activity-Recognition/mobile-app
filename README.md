@@ -60,7 +60,7 @@ or
 
 - See [https://aka.ms/ReactNativeGuideMacOS](https://aka.ms/ReactNativeGuideMacOS) for the latest up-to-date instructions.
 
-## XCode
+## Listing Available Devcies
 
 List available devices
 
