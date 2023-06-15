@@ -60,9 +60,9 @@ or
 
 - See [https://aka.ms/ReactNativeGuideMacOS](https://aka.ms/ReactNativeGuideMacOS) for the latest up-to-date instructions.
 
-## Listing Available Devcies
+## Listing Available Devices
 
-List available devices
+To list your availble devices for running the app, refer to below commands.
 
 iOS:
 - `xcrun simctl list devices`
