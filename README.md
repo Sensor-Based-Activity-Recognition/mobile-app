@@ -75,6 +75,8 @@ Android:
 
 ## Android
 
+You can download the .apk in this repo's release and install our app: [Android App .apk](https://github.com/Sensor-Based-Activity-Recognition/mobile-app/releases/tag/v1.0)
+
 **Build the Apk file**
 ```bash
 npm run build-android
