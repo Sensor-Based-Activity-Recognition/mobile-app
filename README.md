@@ -95,3 +95,7 @@ For releasing on iOS, you need a paid Apple Developer account. It is not possibl
 You can still setup XCode on your machine and install & use our app that way.
 
 or, buy an Android ;)
+
+# Changing the Host
+
+When you don't want to use our backend-api, you need to replace the host `https://sbar.fuet.ch` in the `./App.tsx` file with your own host.
