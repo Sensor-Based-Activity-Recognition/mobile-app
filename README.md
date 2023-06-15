@@ -86,3 +86,10 @@ The generated APK file can be found at: `.\android\app\build\outputs\apk\release
 adb install -r .\android\app\build\outputs\apk\release\app-release.apk
 ```
 You can leave out the `-r` flag if you want to install the app for the first time.
+
+## iOS
+
+For releasing on iOS, you need a paid Apple Developer account. It is not possible for us to provide an .ipa file without that. 
+You can still setup XCode on your machine and install & use our app that way.
+
+or, buy an Android ;)
